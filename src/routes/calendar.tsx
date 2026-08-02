@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { EVENTS, clubById } from "@/lib/campus-data";
+import { clubById } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/calendar")({
@@ -27,11 +27,14 @@ export const Route = createFileRoute("/calendar")({
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function CalendarPage() {
-  const { myClubs } = useSession();
+  const { myClubs, events: allEvents } = useSession();
   const today = new Date();
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
 
-  const events = useMemo(() => EVENTS.filter((e) => myClubs.includes(e.clubId)), [myClubs]);
+  const events = useMemo(
+    () => allEvents.filter((e) => myClubs.includes(e.clubId)),
+    [myClubs, allEvents],
+  );
 
   const cells = useMemo(() => {
     const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
