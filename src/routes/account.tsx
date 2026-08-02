@@ -1,4 +1,3 @@
-import { createFileRoute } from '@tanstack/react-router'
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -257,11 +256,4 @@ export function Field({
       />
     </label>
   );
-}
-export const Route = createFileRoute('/account')({
-  component: RouteComponent,
-})
-
-function RouteComponent() {
-  return <div>Hello "/account"!</div>
 }
