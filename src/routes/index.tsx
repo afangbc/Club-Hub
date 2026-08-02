@@ -29,11 +29,14 @@ const roles: { value: Role; label: string; hint: string }[] = [
 ];
 
 function Index() {
-  const { session, joined, ready, signIn, joinSchool } = useSession();
+  const { session, joined, ready, signIn, signUp, joinSchool } = useSession();
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"signin" | "signup">("signup");
   const [role, setRole] = useState<Role>("student");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
 
@@ -89,12 +92,17 @@ function Index() {
               className="mt-3 space-y-5"
               onSubmit={(e) => {
                 e.preventDefault();
+                if (mode === "signin") {
+                  if (!email.trim() || !password) return setError("Enter your email and password.");
+                  return setError(signIn(email.trim(), password) ?? "");
+                }
                 if (!name.trim() || !email.trim()) return setError("Fill in your name and email.");
-                setError("");
-                signIn({ name: name.trim(), email: email.trim(), role });
+                if (password !== confirm) return setError("Passwords don't match.");
+                setError(signUp({ name: name.trim(), email: email.trim(), role, password }) ?? "");
               }}
             >
-              <h2 className="text-3xl">Sign in</h2>
+              <h2 className="text-3xl">{mode === "signup" ? "Create your account" : "Sign in"}</h2>
+              {mode === "signup" && (
               <div className="grid gap-2">
                 {roles.map((r) => (
                   <button
@@ -112,7 +120,10 @@ function Index() {
                   </button>
                 ))}
               </div>
-              <Field label="Full name" value={name} onChange={setName} placeholder="Jordan Rivera" />
+              )}
+              {mode === "signup" && (
+                <Field label="Full name" value={name} onChange={setName} placeholder="Jordan Rivera" />
+              )}
               <Field
                 label="School email"
                 value={email}
@@ -120,10 +131,38 @@ function Index() {
                 type="email"
                 placeholder="jrivera@northviewisd.org"
               />
+              <Field
+                label="Password"
+                value={password}
+                onChange={setPassword}
+                type="password"
+                placeholder="At least 6 characters"
+              />
+              {mode === "signup" && (
+                <Field
+                  label="Confirm password"
+                  value={confirm}
+                  onChange={setConfirm}
+                  type="password"
+                  placeholder="Re-enter password"
+                />
+              )}
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Submit>Continue</Submit>
+              <Submit>{mode === "signup" ? "Create account" : "Continue"}</Submit>
               <p className="text-xs text-muted-foreground">
-                Demo sign-in for the proof of concept — no password yet.
+                {mode === "signup" ? "Already have an account?" : "New to ClubHub?"}{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode(mode === "signup" ? "signin" : "signup");
+                    setError("");
+                    setPassword("");
+                    setConfirm("");
+                  }}
+                  className="font-semibold text-primary underline underline-offset-2"
+                >
+                  {mode === "signup" ? "Sign in" : "Create an account"}
+                </button>
               </p>
             </form>
           ) : (
