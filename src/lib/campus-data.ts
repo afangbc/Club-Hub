@@ -156,3 +156,20 @@ export const EVENTS: ClubEvent[] = [
 ];
 
 export const clubById = (id: string) => CLUBS.find((c) => c.id === id);
+
+export type JoinRequest = {
+  id: string;
+  clubId: string;
+  studentName: string;
+  email: string;
+  grade: string;
+  note: string;
+};
+
+export const ROSTER_REQUESTS: JoinRequest[] = [
+  { id: "r1", clubId: "nhs", studentName: "Maya Fitzgerald", email: "mfitzgerald@northviewisd.org", grade: "11th", note: "3.8 GPA, 24 service hours logged." },
+  { id: "r2", clubId: "nhs", studentName: "Devin Park", email: "dpark@northviewisd.org", grade: "12th", note: "Interest form submitted Sept 12." },
+  { id: "r3", clubId: "robotics", studentName: "Aaliyah Brooks", email: "abrooks@northviewisd.org", grade: "10th", note: "Attended open build night, safety quiz passed." },
+  { id: "r4", clubId: "hoops", studentName: "Elias Trevino", email: "etrevino@northviewisd.org", grade: "11th", note: "Rostered guard, needs team code." },
+  { id: "r5", clubId: "robotics", studentName: "Sana Iqbal", email: "siqbal@northviewisd.org", grade: "9th", note: "CAD experience from middle school team." },
+];
