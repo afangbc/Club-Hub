@@ -1,57 +1,55 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, Compass, LogOut, Settings, ShieldCheck, Users } from "lucide-react";
+import { CalendarPlus, LayoutDashboard, LogOut, Settings, UserCheck } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { SCHOOL } from "@/lib/campus-data";
 import { roleLabel, useSession } from "@/lib/session";
 
 const nav = [
-  { to: "/clubs", label: "Club Directory", icon: Compass },
-  { to: "/my-clubs", label: "My Clubs", icon: Users },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays },
+  { to: "/manage", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/manage/requests", label: "Requests", icon: UserCheck },
+  { to: "/manage/events", label: "Meetings", icon: CalendarPlus },
 ] as const;
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function StaffShell({ children }: { children: ReactNode }) {
   const { session, joined, ready, signOut } = useSession();
   const navigate = useNavigate();
   const isStaff = session?.role === "teacher" || session?.role === "admin";
 
   useEffect(() => {
-    if (ready && (!session || !joined)) navigate({ to: "/", replace: true });
-  }, [ready, session, joined, navigate]);
+    if (!ready) return;
+    if (!session || !joined) navigate({ to: "/", replace: true });
+    else if (!isStaff) navigate({ to: "/clubs", replace: true });
+  }, [ready, session, joined, isStaff, navigate]);
 
-  if (!ready || !session || !joined) return null;
+  if (!ready || !session || !joined || !isStaff) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-border bg-primary text-primary-foreground">
+    <div className="min-h-screen bg-secondary">
+      <header className="sticky top-0 z-30 border-b border-border bg-foreground text-background">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-          <Link to="/clubs" className="flex items-center gap-2">
+          <Link to="/manage" className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-md bg-brand font-display text-lg text-brand-foreground">
               N
             </span>
-            <span className="font-display text-2xl leading-none">ClubHub</span>
+            <span className="font-display text-2xl leading-none">
+              ClubHub <span className="text-brand">Staff</span>
+            </span>
           </Link>
-          <span className="hidden text-xs uppercase tracking-widest opacity-70 sm:inline">
-            {SCHOOL.name} · {SCHOOL.mascot}
+          <span className="hidden text-xs uppercase tracking-widest opacity-60 sm:inline">
+            {SCHOOL.name} console
           </span>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold leading-tight">{session.name}</p>
-              <p className="text-xs opacity-70">{roleLabel[session.role]}</p>
+              <p className="text-xs opacity-60">{roleLabel[session.role]}</p>
             </div>
-            {isStaff && (
-              <Link
-                to="/manage"
-                className="flex items-center gap-1.5 rounded-md border border-primary-foreground/25 px-3 py-1.5 text-xs font-semibold hover:bg-primary-foreground/10"
-              >
-                <ShieldCheck className="size-3.5" /> Staff console
-              </Link>
-            )}
             <Link
-              to="/account"
-              aria-label="Account settings"
-              className="rounded-md p-2 transition-colors hover:bg-primary-foreground/10"
+              to="/clubs"
+              className="rounded-md border border-background/25 px-3 py-1.5 text-xs font-semibold hover:bg-background/10"
             >
+              Student view
+            </Link>
+            <Link to="/account" aria-label="Account settings" className="rounded-md p-2 hover:bg-background/10">
               <Settings className="size-4" />
             </Link>
             <button
@@ -60,7 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 navigate({ to: "/", replace: true });
               }}
               aria-label="Sign out"
-              className="rounded-md p-2 transition-colors hover:bg-primary-foreground/10"
+              className="rounded-md p-2 hover:bg-background/10"
             >
               <LogOut className="size-4" />
             </button>
@@ -71,8 +69,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               key={n.to}
               to={n.to}
+              activeOptions={{ exact: n.to === "/manage" }}
               activeProps={{ className: "border-brand text-brand" }}
-              inactiveProps={{ className: "border-transparent opacity-75 hover:opacity-100" }}
+              inactiveProps={{ className: "border-transparent opacity-70 hover:opacity-100" }}
               className="flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-semibold"
             >
               <n.icon className="size-4" />
