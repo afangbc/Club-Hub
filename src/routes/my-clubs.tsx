@@ -8,12 +8,12 @@ import { ClubCard } from "./clubs";
 export const Route = createFileRoute("/my-clubs")({
   head: () => ({
     meta: [
-      { title: "My Clubs — Clubhive" },
+      { title: "My Clubs — ClubHub" },
       {
         name: "description",
         content: "The clubs and teams you belong to, plus your pending requests to private clubs.",
       },
-      { property: "og:title", content: "My Clubs — Clubhive" },
+      { property: "og:title", content: "My Clubs — ClubHub" },
       { property: "og:description", content: "Your clubs, teams, and pending join requests." },
     ],
   }),

@@ -8,13 +8,13 @@ import { useSession } from "@/lib/session";
 export const Route = createFileRoute("/clubs")({
   head: () => ({
     meta: [
-      { title: "Club Directory — Clubhive" },
+      { title: "Club Directory — ClubHub" },
       {
         name: "description",
         content:
           "Browse every club and team at your school. Join public clubs instantly and see how to get into private ones.",
       },
-      { property: "og:title", content: "Club Directory — Clubhive" },
+      { property: "og:title", content: "Club Directory — ClubHub" },
       {
         property: "og:description",
         content: "Every club at your school in one searchable directory. No gatekeeping.",

@@ -15,7 +15,7 @@ type State = {
   requestClub: (id: string) => void;
 };
 
-const KEY = "clubhive.state.v1";
+const KEY = "clubhub.state.v1";
 const Ctx = createContext<State | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
