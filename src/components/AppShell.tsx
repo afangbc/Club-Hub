@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, Compass, LogOut, Users } from "lucide-react";
+import { CalendarDays, Compass, LogOut, Settings, ShieldCheck, Users } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { SCHOOL } from "@/lib/campus-data";
 import { roleLabel, useSession } from "@/lib/session";
@@ -13,6 +13,7 @@ const nav = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { session, joined, ready, signOut } = useSession();
   const navigate = useNavigate();
+  const isStaff = session?.role === "teacher" || session?.role === "admin";
 
   useEffect(() => {
     if (ready && (!session || !joined)) navigate({ to: "/", replace: true });
@@ -38,6 +39,21 @@ export function AppShell({ children }: { children: ReactNode }) {
               <p className="text-sm font-semibold leading-tight">{session.name}</p>
               <p className="text-xs opacity-70">{roleLabel[session.role]}</p>
             </div>
+            {isStaff && (
+              <Link
+                to="/manage"
+                className="flex items-center gap-1.5 rounded-md border border-primary-foreground/25 px-3 py-1.5 text-xs font-semibold hover:bg-primary-foreground/10"
+              >
+                <ShieldCheck className="size-3.5" /> Staff console
+              </Link>
+            )}
+            <Link
+              to="/account"
+              aria-label="Account settings"
+              className="rounded-md p-2 transition-colors hover:bg-primary-foreground/10"
+            >
+              <Settings className="size-4" />
+            </Link>
             <button
               onClick={() => {
                 signOut();
