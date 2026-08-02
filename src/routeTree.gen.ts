@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClubsRouteImport } from './routes/clubs'
+import { Route as MyClubsRouteImport } from './routes/my-clubs'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const ClubsRoute = ClubsRouteImport.update({
   path: '/clubs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MyClubsRoute = MyClubsRouteImport.update({
+  id: '/my-clubs',
+  path: '/my-clubs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clubs': typeof ClubsRoute
+  '/my-clubs': typeof MyClubsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clubs': typeof ClubsRoute
+  '/my-clubs': typeof MyClubsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/clubs': typeof ClubsRoute
+  '/my-clubs': typeof MyClubsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clubs'
+  fullPaths: '/' | '/clubs' | '/my-clubs'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clubs'
-  id: '__root__' | '/' | '/clubs'
+  to: '/' | '/clubs' | '/my-clubs'
+  id: '__root__' | '/' | '/clubs' | '/my-clubs'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClubsRoute: typeof ClubsRoute
+  MyClubsRoute: typeof MyClubsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClubsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/my-clubs': {
+      id: '/my-clubs'
+      path: '/my-clubs'
+      fullPath: '/my-clubs'
+      preLoaderRoute: typeof MyClubsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClubsRoute: ClubsRoute,
+  MyClubsRoute: MyClubsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
