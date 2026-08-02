@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Lock, Globe, Search, Check, Clock } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { CLUBS, type Club } from "@/lib/campus-data";
+import { type Club } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/clubs")({
@@ -31,18 +31,19 @@ export const Route = createFileRoute("/clubs")({
 const categories = ["All", "Academic", "STEM", "Service", "Arts", "Culture", "Athletics"] as const;
 
 function ClubsPage() {
+  const { clubs } = useSession();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<(typeof categories)[number]>("All");
 
   const results = useMemo(
     () =>
-      CLUBS.filter(
+      clubs.filter(
         (c) =>
           (cat === "All" || c.category === cat) &&
           (c.name.toLowerCase().includes(q.toLowerCase()) ||
             c.sponsor.toLowerCase().includes(q.toLowerCase())),
       ),
-    [q, cat],
+    [q, cat, clubs],
   );
 
   return (

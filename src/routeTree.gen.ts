@@ -16,6 +16,7 @@ import { Route as ClubsRouteImport } from './routes/clubs'
 import { Route as ManageRouteImport } from './routes/manage'
 import { Route as MyClubsRouteImport } from './routes/my-clubs'
 import { Route as ManageIndexRouteImport } from './routes/manage.index'
+import { Route as ManageEventsRouteImport } from './routes/manage.events'
 import { Route as ManageRequestsRouteImport } from './routes/manage.requests'
 
 const IndexRoute = IndexRouteImport.update({
@@ -53,6 +54,11 @@ const ManageIndexRoute = ManageIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ManageRoute,
 } as any)
+const ManageEventsRoute = ManageEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => ManageRoute,
+} as any)
 const ManageRequestsRoute = ManageRequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/clubs': typeof ClubsRoute
   '/manage': typeof ManageRouteWithChildren
   '/my-clubs': typeof MyClubsRoute
+  '/manage/events': typeof ManageEventsRoute
   '/manage/requests': typeof ManageRequestsRoute
   '/manage/': typeof ManageIndexRoute
 }
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/clubs': typeof ClubsRoute
   '/my-clubs': typeof MyClubsRoute
+  '/manage/events': typeof ManageEventsRoute
   '/manage/requests': typeof ManageRequestsRoute
   '/manage': typeof ManageIndexRoute
 }
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/clubs': typeof ClubsRoute
   '/manage': typeof ManageRouteWithChildren
   '/my-clubs': typeof MyClubsRoute
+  '/manage/events': typeof ManageEventsRoute
   '/manage/requests': typeof ManageRequestsRoute
   '/manage/': typeof ManageIndexRoute
 }
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/clubs'
     | '/manage'
     | '/my-clubs'
+    | '/manage/events'
     | '/manage/requests'
     | '/manage/'
   fileRoutesByTo: FileRoutesByTo
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/clubs'
     | '/my-clubs'
+    | '/manage/events'
     | '/manage/requests'
     | '/manage'
   id:
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/clubs'
     | '/manage'
     | '/my-clubs'
+    | '/manage/events'
     | '/manage/requests'
     | '/manage/'
   fileRoutesById: FileRoutesById
@@ -181,6 +193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManageIndexRouteImport
       parentRoute: typeof ManageRoute
     }
+    '/manage/events': {
+      id: '/manage/events'
+      path: '/events'
+      fullPath: '/manage/events'
+      preLoaderRoute: typeof ManageEventsRouteImport
+      parentRoute: typeof ManageRoute
+    }
     '/manage/requests': {
       id: '/manage/requests'
       path: '/requests'
@@ -192,11 +211,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface ManageRouteChildren {
+  ManageEventsRoute: typeof ManageEventsRoute
   ManageRequestsRoute: typeof ManageRequestsRoute
   ManageIndexRoute: typeof ManageIndexRoute
 }
 
 const ManageRouteChildren: ManageRouteChildren = {
+  ManageEventsRoute: ManageEventsRoute,
   ManageRequestsRoute: ManageRequestsRoute,
   ManageIndexRoute: ManageIndexRoute,
 }
