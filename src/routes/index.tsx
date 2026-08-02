@@ -6,13 +6,13 @@ import { useSession } from "@/lib/session";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Clubhive — One club app for your whole campus" },
+      { title: "ClubHub — One club app for your whole campus" },
       {
         name: "description",
         content:
-          "Clubhive puts every club, team, and meeting at your school in one place: directory, joining, and a shared calendar.",
+          "ClubHub puts every club, team, and meeting at your school in one place: directory, joining, and a shared calendar.",
       },
-      { property: "og:title", content: "Clubhive — One club app for your whole campus" },
+      { property: "og:title", content: "ClubHub — One club app for your whole campus" },
       {
         property: "og:description",
         content: "Find clubs, join them, and see every meeting on one calendar.",
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/")({
 const roles: { value: Role; label: string; hint: string }[] = [
   { value: "student", label: "Student", hint: "Join clubs & see your calendar" },
   { value: "teacher", label: "Teacher", hint: "Sponsor clubs & post meetings" },
-  { value: "admin", label: "School Admin", hint: "Manage the school's Clubhive" },
+  { value: "admin", label: "School Admin", hint: "Manage the school's ClubHub" },
 ];
 
 function Index() {
@@ -50,7 +50,7 @@ function Index() {
           <span className="grid size-10 place-items-center rounded-lg bg-brand font-display text-2xl text-brand-foreground">
             N
           </span>
-          <span className="font-display text-3xl">Clubhive</span>
+          <span className="font-display text-3xl">ClubHub</span>
         </div>
         <div className="max-w-md py-14">
           <h1 className="text-5xl leading-[1.05] lg:text-6xl">
@@ -58,7 +58,7 @@ function Index() {
             <span className="text-brand"> rule them all.</span>
           </h1>
           <p className="mt-5 text-base opacity-80">
-            No more juggling GroupMe, Remind, and SportsYou just to find out where a meeting is.
+            No more juggling a different app for every club just to find out where a meeting is.
             Every club, team, and tutorial at your school — one directory, one calendar.
           </p>
           <ul className="mt-8 space-y-3 text-sm opacity-90">
@@ -141,7 +141,7 @@ function Index() {
             >
               <h2 className="text-3xl">Join your school</h2>
               <p className="text-sm text-muted-foreground">
-                Enter the access code your school gave you. It locks Clubhive to{" "}
+                Enter the access code your school gave you. It locks ClubHub to{" "}
                 {SCHOOL.name} only — you'll never see clubs from other campuses.
               </p>
               <Field
@@ -151,7 +151,7 @@ function Index() {
                 placeholder="FALCON26"
               />
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Submit>Enter Clubhive</Submit>
+              <Submit>Enter ClubHub</Submit>
               <p className="rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground">
                 Demo code: <span className="font-semibold">{SCHOOL.joinCode}</span>
               </p>

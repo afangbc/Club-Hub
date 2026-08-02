@@ -78,12 +78,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Clubhive — One club app for your whole campus" },
+      { title: "ClubHub — One club app for your whole campus" },
       {
         name: "description",
         content: "Find every club, team, and meeting at your school in one app.",
       },
-      { property: "og:title", content: "Clubhive" },
+      { property: "og:title", content: "ClubHub" },
       {
         property: "og:description",
         content: "Find every club, team, and meeting at your school in one app.",
