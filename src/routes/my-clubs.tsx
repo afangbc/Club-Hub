@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Clock } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { CLUBS, EVENTS, clubById } from "@/lib/campus-data";
+import { clubById } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 import { ClubCard } from "./clubs";
 
@@ -25,10 +25,10 @@ export const Route = createFileRoute("/my-clubs")({
 });
 
 function MyClubs() {
-  const { myClubs, pending } = useSession();
-  const mine = CLUBS.filter((c) => myClubs.includes(c.id));
-  const requested = CLUBS.filter((c) => pending.includes(c.id));
-  const upcoming = EVENTS.filter((e) => myClubs.includes(e.clubId)).slice(0, 4);
+  const { myClubs, pending, clubs, events } = useSession();
+  const mine = clubs.filter((c) => myClubs.includes(c.id));
+  const requested = clubs.filter((c) => pending.includes(c.id));
+  const upcoming = events.filter((e) => myClubs.includes(e.clubId)).slice(0, 4);
 
   return (
     <div>
