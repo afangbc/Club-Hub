@@ -143,12 +143,7 @@ function ClubEditor({ club, pending }: { club: Club; pending: number }) {
           className="mt-3 space-y-3"
           onSubmit={(e) => {
             e.preventDefault();
-            updateClub(club.id, {
-              meets,
-              room,
-              blurb,
-              joinInstructions: instructions.trim() || undefined,
-            });
+            updateClub(club.id, { meets, room, blurb, joinInstructions: instructions.trim() });
             setSaved(true);
           }}
         >
