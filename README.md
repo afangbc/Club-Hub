@@ -22,13 +22,13 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Prefer working locally? Install [Bun](https://bun.com/docs/installation), then run:
 
 ```sh
 git clone <this-repository-url>
 cd <repository-name>
-npm i
-npm run dev
+bun install --frozen-lockfile
+bun run dev
 ```
 
 ## How the backend works
@@ -37,10 +37,9 @@ Accounts, clubs, memberships, meetings, and announcements live server-side in
 `src/server`, not in the browser.
 
 - **Storage** — the whole database is one JSON document written through
-  `src/server/storage.ts`. It lands in `.data/clubhub.json` (override with
-  `CLUBHUB_DATA_FILE`) and is seeded with Frisco High School on first run.
-  Writes are atomic and serialized; swapping in Postgres or SQLite means writing
-  one more driver behind the same interface.
+  `src/server/storage.ts`. Production uses Upstash Redis. Local development uses
+  `.data/clubhub.json` (override with `CLUBHUB_DATA_FILE`). The database is seeded
+  with Frisco High School on first run.
 - **Passwords** — hashed with PBKDF2-HMAC-SHA256, 210,000 iterations, a random
   16-byte salt per account, verified in constant time. Plaintext is never
   stored or logged. WebCrypto only, so the same code runs on Node and on edge
@@ -70,3 +69,20 @@ is `RACCOONS26`.
 | School admin | `alicia.nguyen@friscoisd.org` |
 
 Delete `.data/clubhub.json` to reset the campus back to seed data.
+
+## Deploying to Vercel
+
+The Nitro build uses the Vercel preset, so SSR and TanStack server functions are
+deployed as Vercel Functions. The backend also requires durable Upstash Redis
+storage; the function's local project directory is not used as a production
+database.
+
+1. Open the Vercel project and go to **Storage**.
+2. Add the **Upstash Redis** integration and connect it to this project.
+3. Confirm Vercel created `UPSTASH_REDIS_REST_URL` and
+   `UPSTASH_REDIS_REST_TOKEN` for Production, Preview, and Development.
+4. Redeploy the latest commit so the new environment variables are available.
+
+The optional `CLUBHUB_REDIS_KEY` variable changes the Redis key used for the
+database. Keep the default unless multiple ClubHub installations share one Redis
+database. Never expose the Upstash REST token to browser code or commit it.
