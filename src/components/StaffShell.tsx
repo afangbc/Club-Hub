@@ -49,7 +49,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
           <span className="hidden text-xs uppercase tracking-widest opacity-60 sm:inline">
             {SCHOOL.name} · {SCHOOL.district}
           </span>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto mr-12 flex items-center gap-2">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold leading-tight">{session.name}</p>
               <p className="text-xs opacity-60">{roleLabel[session.role]}</p>

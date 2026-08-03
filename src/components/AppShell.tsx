@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="hidden text-xs uppercase tracking-widest opacity-70 sm:inline">
             {SCHOOL.name} · {SCHOOL.district}
           </span>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto mr-12 flex items-center gap-3">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold leading-tight">{session.name}</p>
               <p className="text-xs opacity-70">{roleLabel[session.role]}</p>
