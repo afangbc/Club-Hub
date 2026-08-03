@@ -88,6 +88,16 @@ export type StaffAccount = {
   note?: string | undefined;
 };
 
+/** Safe account details an admin may view for everyone enrolled at the school. */
+export type SchoolAccount = {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  status: AccountStatus;
+  grade?: string | undefined;
+};
+
 export type Prefs = {
   eventReminders: boolean;
   announcements: boolean;

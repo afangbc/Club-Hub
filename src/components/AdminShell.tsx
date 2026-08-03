@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Building2, KeyRound, LogOut, Settings, UserCog } from "lucide-react";
+import { Building2, KeyRound, LogOut, Settings, UserCog, Users } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { SCHOOL, homeFor, roleLabel } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
@@ -8,6 +8,7 @@ const nav = [
   { to: "/admin", label: "Campus", icon: KeyRound },
   { to: "/admin/clubs", label: "Clubs", icon: Building2 },
   { to: "/admin/teachers", label: "Staff Accounts", icon: UserCog },
+  { to: "/admin/users", label: "All Users", icon: Users },
 ] as const;
 
 export function AdminShell({ children }: { children: ReactNode }) {

@@ -34,6 +34,7 @@ import {
   type JoinRequest,
   type Prefs,
   type Role,
+  type SchoolAccount,
   type Session,
   type StaffAccount,
 } from "./campus-data";
@@ -58,6 +59,7 @@ type State = {
   pending: string[];
   requests: JoinRequest[];
   staff: StaffAccount[];
+  users: SchoolAccount[];
   pendingStaff: StaffAccount[];
   sponsors: StaffAccount[];
   schoolCode: string;
@@ -96,6 +98,7 @@ const emptyState: AppState = {
   pending: [],
   requests: [],
   staff: [],
+  users: [],
   schoolCode: "",
 };
 
@@ -148,6 +151,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       pending: state.pending,
       requests: state.requests,
       staff,
+      users: state.users,
       pendingStaff: staff.filter((s) => s.status === "pending"),
       sponsors: staff.filter((s) => s.status === "active"),
       schoolCode: state.schoolCode,

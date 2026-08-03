@@ -10,6 +10,7 @@ import {
   type JoinRequest,
   type Prefs,
   type Role,
+  type SchoolAccount,
   type Session,
   type StaffAccount,
 } from "@/lib/campus-data";
@@ -48,6 +49,8 @@ export type AppState = {
   pending: string[];
   requests: JoinRequest[];
   staff: StaffAccount[];
+  /** Admins only — safe profile fields for everyone enrolled at the school. */
+  users: SchoolAccount[];
   /** Admins only — nobody else is told the live campus code. */
   schoolCode: string;
 };
@@ -126,6 +129,7 @@ export async function loadState(): Promise<AppState> {
     pending: [],
     requests: [],
     staff: [],
+    users: [],
     schoolCode: "",
   };
 
@@ -174,6 +178,19 @@ export async function loadState(): Promise<AppState> {
         }))
     : [];
 
+  const users: SchoolAccount[] = isActiveAdmin(user)
+    ? db.users
+        .filter((account) => account.schoolId === db.school.id)
+        .map((account) => ({
+          id: account.id,
+          name: account.name,
+          email: account.email,
+          role: account.role,
+          status: account.status,
+          ...(account.grade === undefined ? {} : { grade: account.grade }),
+        }))
+    : [];
+
   return {
     user: toSession(user),
     prefs: user.prefs,
@@ -194,6 +211,7 @@ export async function loadState(): Promise<AppState> {
     pending: mine.filter((m) => m.status === "pending").map((m) => m.clubId),
     requests,
     staff,
+    users,
     schoolCode: isActiveAdmin(user) ? db.school.joinCode : "",
   };
 }
