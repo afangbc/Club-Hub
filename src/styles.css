@@ -116,8 +116,8 @@
   --card-foreground: oklch(0.984 0.003 247.858);
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
-  /* Invert branded panels in dark mode too: light surface, near-black copy. */
-  --primary: oklch(0.94 0.018 250);
+  /* Keep the school blue; only its light lettering flips to near-black. */
+  --primary: oklch(0.42 0.175 264);
   --primary-foreground: oklch(0.15 0.04 264);
   --secondary: oklch(0.279 0.041 260.031);
   --secondary-foreground: oklch(0.984 0.003 247.858);
@@ -170,8 +170,8 @@
   .theme-changing *::before,
   .theme-changing *::after {
     transition-property: background-color, border-color, color, fill, stroke, box-shadow;
-    transition-duration: 200ms;
-    transition-timing-function: ease;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 

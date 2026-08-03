@@ -2,13 +2,21 @@ import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const THEME_KEY = "clubhub.theme";
+let transitionTimer: number | undefined;
 
 function applyTheme(dark: boolean) {
   const root = document.documentElement;
+  if (transitionTimer !== undefined) window.clearTimeout(transitionTimer);
   root.classList.add("theme-changing");
+  // Commit the current palette before swapping variables so the browser can
+  // interpolate instead of painting both themes in one frame.
+  void root.offsetWidth;
   root.classList.toggle("dark", dark);
   root.style.colorScheme = dark ? "dark" : "light";
-  window.setTimeout(() => root.classList.remove("theme-changing"), 250);
+  transitionTimer = window.setTimeout(() => {
+    root.classList.remove("theme-changing");
+    transitionTimer = undefined;
+  }, 350);
 }
 
 export function ThemeToggle() {
@@ -21,7 +29,7 @@ export function ThemeToggle() {
   }, []);
 
   const toggle = () => {
-    const next = !dark;
+    const next = !document.documentElement.classList.contains("dark");
     setDark(next);
     applyTheme(next);
     localStorage.setItem(THEME_KEY, next ? "dark" : "light");
