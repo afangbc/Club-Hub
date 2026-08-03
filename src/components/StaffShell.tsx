@@ -1,27 +1,38 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { CalendarPlus, LayoutDashboard, LogOut, Settings, UserCheck } from "lucide-react";
+import {
+  CalendarPlus,
+  LayoutDashboard,
+  LogOut,
+  Megaphone,
+  Settings,
+  UserCheck,
+} from "lucide-react";
 import { useEffect, type ReactNode } from "react";
-import { SCHOOL } from "@/lib/campus-data";
-import { roleLabel, useSession } from "@/lib/session";
+import { SCHOOL, roleLabel } from "@/lib/campus-data";
+import { useSession } from "@/lib/session";
 
 const nav = [
-  { to: "/manage", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/manage/requests", label: "Requests", icon: UserCheck },
+  { to: "/manage", label: "My Clubs", icon: LayoutDashboard },
   { to: "/manage/events", label: "Meetings", icon: CalendarPlus },
+  { to: "/manage/announcements", label: "Announcements", icon: Megaphone },
+  { to: "/manage/requests", label: "Requests", icon: UserCheck },
 ] as const;
 
 export function StaffShell({ children }: { children: ReactNode }) {
   const { session, joined, ready, signOut } = useSession();
   const navigate = useNavigate();
-  const isStaff = session?.role === "teacher" || session?.role === "admin";
+  const allowed = session?.role === "teacher" && session.status === "active" && joined;
 
   useEffect(() => {
     if (!ready) return;
-    if (!session || !joined) navigate({ to: "/", replace: true });
-    else if (!isStaff) navigate({ to: "/clubs", replace: true });
-  }, [ready, session, joined, isStaff, navigate]);
+    if (!session) navigate({ to: "/", replace: true });
+    else if (session.role === "admin") navigate({ to: "/admin", replace: true });
+    else if (session.role !== "teacher") navigate({ to: "/clubs", replace: true });
+    else if (session.status !== "active") navigate({ to: "/pending", replace: true });
+    else if (!joined) navigate({ to: "/", replace: true });
+  }, [ready, session, joined, navigate]);
 
-  if (!ready || !session || !joined || !isStaff) return null;
+  if (!ready || !session || !allowed) return null;
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -29,14 +40,14 @@ export function StaffShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
           <Link to="/manage" className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-md bg-brand font-display text-lg text-brand-foreground">
-              N
+              F
             </span>
             <span className="font-display text-2xl leading-none">
-              ClubHub <span className="text-brand">Staff</span>
+              ClubHub <span className="text-brand">Sponsor</span>
             </span>
           </Link>
           <span className="hidden text-xs uppercase tracking-widest opacity-60 sm:inline">
-            {SCHOOL.name} console
+            {SCHOOL.name} · {SCHOOL.district}
           </span>
           <div className="ml-auto flex items-center gap-2">
             <div className="hidden text-right sm:block">
@@ -49,12 +60,16 @@ export function StaffShell({ children }: { children: ReactNode }) {
             >
               Student view
             </Link>
-            <Link to="/account" aria-label="Account settings" className="rounded-md p-2 hover:bg-background/10">
+            <Link
+              to="/account"
+              aria-label="Account settings"
+              className="rounded-md p-2 hover:bg-background/10"
+            >
               <Settings className="size-4" />
             </Link>
             <button
-              onClick={() => {
-                signOut();
+              onClick={async () => {
+                await signOut();
                 navigate({ to: "/", replace: true });
               }}
               aria-label="Sign out"

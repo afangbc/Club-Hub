@@ -1,84 +1,68 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
-import { SelectField, TextField } from "@/components/form-fields";
+import { SelectField, TextArea, TextField } from "@/components/form-fields";
 import { useSession } from "@/lib/session";
 import { staffClubs } from "@/lib/staff";
 
-export const Route = createFileRoute("/manage/events")({
+export const Route = createFileRoute("/manage/announcements")({
   head: () => ({
     meta: [
-      { title: "Meetings — ClubHub Staff" },
+      { title: "Announcements — ClubHub Staff" },
       {
         name: "description",
         content:
-          "Post, edit, and cancel meetings for the clubs you sponsor. Members see them on their calendar instantly.",
+          "Send an announcement to everyone in the clubs you sponsor — deadlines, room changes, and reminders.",
       },
-      { property: "og:title", content: "Meetings — ClubHub Staff" },
-      {
-        property: "og:description",
-        content: "Schedule club meetings straight to student calendars.",
-      },
+      { property: "og:title", content: "Announcements — ClubHub Staff" },
+      { property: "og:description", content: "Message every member of your club at once." },
     ],
   }),
-  component: Meetings,
+  component: Announcements,
 });
 
-function Meetings() {
-  const { session, clubs, events, addEvent, removeEvent } = useSession();
+function Announcements() {
+  const { session, clubs, announcements, addAnnouncement, removeAnnouncement } = useSession();
   const mine = session ? staffClubs(clubs, session) : [];
   const ids = mine.map((c) => c.id);
   const [picked, setPicked] = useState("");
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
-  const [start, setStart] = useState("4:00 PM");
-  const [end, setEnd] = useState("5:00 PM");
-  const [location, setLocation] = useState("");
+  const [body, setBody] = useState("");
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [busy, setBusy] = useState(false);
 
   if (!session) return null;
   const clubId = ids.includes(picked) ? picked : (mine[0]?.id ?? "");
-  const list = events
-    .filter((e) => ids.includes(e.clubId))
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const posted = announcements.filter((a) => ids.includes(a.clubId));
 
   if (mine.length === 0) return <NoClubs />;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
       <section className="card-surface h-fit p-5">
-        <h1 className="text-3xl leading-tight">Post a meeting</h1>
+        <h1 className="text-3xl leading-tight">Post an announcement</h1>
         <p className="mt-1 text-xs text-muted-foreground">
-          It lands on every member's calendar right away.
+          Every member of that club sees it on their announcements tab.
         </p>
         <form
           className="mt-4 space-y-3"
           onSubmit={async (e) => {
             e.preventDefault();
             if (busy) return;
-            if (!clubId || !title.trim() || !date || !location.trim()) {
+            if (!clubId || !title.trim() || !body.trim()) {
               setOk("");
-              setError("Pick a club and fill in title, date, and location.");
+              setError("Pick a club, then add a headline and a message.");
               return;
             }
             setBusy(true);
-            const posted = title.trim();
-            const problem = await addEvent({
-              clubId,
-              title: posted,
-              date,
-              start,
-              end,
-              location: location.trim(),
-            });
+            const problem = await addAnnouncement({ clubId, title, body });
             setBusy(false);
             setError(problem ?? "");
-            setOk(problem ? "" : `"${posted}" posted.`);
+            setOk(problem ? "" : `Sent to ${clubs.find((c) => c.id === clubId)?.name}.`);
             if (!problem) {
               setTitle("");
-              setLocation("");
+              setBody("");
             }
           }}
         >
@@ -89,17 +73,18 @@ function Meetings() {
             options={mine.map((c) => ({ value: c.id, label: c.name }))}
           />
           <TextField
-            label="Title"
+            label="Headline"
             value={title}
             onChange={setTitle}
-            placeholder="General Meeting"
+            placeholder="Room change this week"
           />
-          <TextField label="Date" value={date} onChange={setDate} type="date" />
-          <div className="grid grid-cols-2 gap-3">
-            <TextField label="Start" value={start} onChange={setStart} />
-            <TextField label="End" value={end} onChange={setEnd} />
-          </div>
-          <TextField label="Location" value={location} onChange={setLocation} placeholder="C-214" />
+          <TextArea
+            label="Message"
+            value={body}
+            onChange={setBody}
+            rows={5}
+            placeholder="We're in the library Thursday — the shop is being resurfaced."
+          />
           {error && <p className="text-sm text-destructive">{error}</p>}
           {ok && <p className="text-sm text-success">{ok}</p>}
           <button
@@ -107,37 +92,40 @@ function Meetings() {
             disabled={busy}
             className="w-full rounded-md bg-primary py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
           >
-            {busy ? "Posting…" : "Post meeting"}
+            {busy ? "Sending…" : "Send announcement"}
           </button>
         </form>
       </section>
 
       <section>
-        <h2 className="text-2xl">Scheduled meetings</h2>
+        <h2 className="text-2xl">Posted</h2>
         <ul className="mt-3 space-y-2">
-          {list.map((e) => (
-            <li key={e.id} className="card-surface flex items-center gap-4 p-3">
-              <div className="w-24 shrink-0 text-xs font-semibold text-muted-foreground">
-                {e.date}
-              </div>
+          {posted.map((a) => (
+            <li key={a.id} className="card-surface flex items-start gap-4 p-4">
               <div className="flex-1">
-                <p className="text-sm font-semibold">{e.title}</p>
+                <p className="text-sm font-semibold">{a.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {clubs.find((c) => c.id === e.clubId)?.name} · {e.start}–{e.end} · {e.location}
+                  {clubs.find((c) => c.id === a.clubId)?.name} ·{" "}
+                  {new Date(`${a.postedAt}T12:00:00`).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}{" "}
+                  · {a.author}
                 </p>
+                <p className="mt-2 text-sm">{a.body}</p>
               </div>
               <button
-                onClick={() => void removeEvent(e.id)}
-                aria-label={`Cancel ${e.title}`}
+                onClick={() => void removeAnnouncement(a.id)}
+                aria-label={`Delete ${a.title}`}
                 className="rounded-md p-2 text-destructive hover:bg-destructive/10"
               >
                 <Trash2 className="size-4" />
               </button>
             </li>
           ))}
-          {list.length === 0 && (
+          {posted.length === 0 && (
             <li className="card-surface p-6 text-center text-sm text-muted-foreground">
-              Nothing scheduled yet.
+              Nothing posted yet.
             </li>
           )}
         </ul>
@@ -149,9 +137,9 @@ function Meetings() {
 function NoClubs() {
   return (
     <div className="card-surface mx-auto max-w-lg p-10 text-center">
-      <h1 className="text-3xl">No clubs to schedule</h1>
+      <h1 className="text-3xl">No clubs to announce to</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Meetings belong to a club, and you don't sponsor one yet.
+        Announcements go out to a club's members, and you don't sponsor a club yet.
       </p>
       <Link
         to="/manage"

@@ -1,0 +1,119 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Megaphone } from "lucide-react";
+import { useState } from "react";
+import { AppShell } from "@/components/AppShell";
+import { useSession } from "@/lib/session";
+
+export const Route = createFileRoute("/announcements")({
+  head: () => ({
+    meta: [
+      { title: "Announcements — ClubHub" },
+      {
+        name: "description",
+        content: "Everything your club sponsors have posted, newest first, in one feed.",
+      },
+      { property: "og:title", content: "Announcements — ClubHub" },
+      {
+        property: "og:description",
+        content: "Deadlines and reminders from every club you joined.",
+      },
+    ],
+  }),
+  component: () => (
+    <AppShell>
+      <AnnouncementsPage />
+    </AppShell>
+  ),
+});
+
+function AnnouncementsPage() {
+  const { myClubs, clubs, announcements } = useSession();
+  const [filter, setFilter] = useState("all");
+
+  const feed = announcements.filter(
+    (a) => myClubs.includes(a.clubId) && (filter === "all" || a.clubId === filter),
+  );
+  const joined = clubs.filter((c) => myClubs.includes(c.id));
+
+  return (
+    <div className="max-w-3xl">
+      <h1 className="text-4xl">Announcements</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Posts from the sponsors of the clubs you joined — newest first.
+      </p>
+
+      {joined.length > 1 && (
+        <div className="mt-6 flex flex-wrap gap-1.5">
+          <Chip active={filter === "all"} onClick={() => setFilter("all")}>
+            All clubs
+          </Chip>
+          {joined.map((c) => (
+            <Chip key={c.id} active={filter === c.id} onClick={() => setFilter(c.id)}>
+              {c.name}
+            </Chip>
+          ))}
+        </div>
+      )}
+
+      {myClubs.length === 0 ? (
+        <div className="card-surface mt-6 p-10 text-center text-sm text-muted-foreground">
+          Join a club and its announcements land here.{" "}
+          <Link to="/clubs" className="font-semibold text-foreground underline">
+            Browse the directory
+          </Link>
+          .
+        </div>
+      ) : feed.length === 0 ? (
+        <div className="card-surface mt-6 p-10 text-center text-sm text-muted-foreground">
+          Nothing posted yet. Your sponsors will show up here first.
+        </div>
+      ) : (
+        <ul className="mt-6 space-y-3">
+          {feed.map((a) => (
+            <li key={a.id} className="card-surface p-5">
+              <div className="flex items-start gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-md bg-accent text-accent-foreground">
+                  <Megaphone className="size-4" />
+                </span>
+                <div className="flex-1">
+                  <h2 className="text-2xl leading-tight">{a.title}</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {clubs.find((c) => c.id === a.clubId)?.name} · {a.author} ·{" "}
+                    {new Date(`${a.postedAt}T12:00:00`).toLocaleDateString(undefined, {
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                  <p className="mt-3 text-sm">{a.body}</p>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+        active
+          ? "bg-primary text-primary-foreground"
+          : "bg-secondary text-secondary-foreground hover:bg-accent"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}

@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { SCHOOL } from "@/lib/campus-data";
-import { roleLabel, useSession, type Prefs } from "@/lib/session";
+import { SCHOOL, roleLabel, type Prefs } from "@/lib/campus-data";
+import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/account")({
   head: () => ({
@@ -25,16 +25,41 @@ export const Route = createFileRoute("/account")({
 });
 
 const prefRows: { key: keyof Prefs; label: string; hint: string }[] = [
-  { key: "eventReminders", label: "Event reminders", hint: "Ping me an hour before a meeting starts." },
-  { key: "announcements", label: "Club announcements", hint: "Posts from sponsors and club leaders." },
+  {
+    key: "eventReminders",
+    label: "Event reminders",
+    hint: "Ping me an hour before a meeting starts.",
+  },
+  {
+    key: "announcements",
+    label: "Club announcements",
+    hint: "Posts from sponsors and club leaders.",
+  },
   { key: "weeklyDigest", label: "Weekly digest", hint: "A Sunday summary of the week ahead." },
-  { key: "calendarSync", label: "Calendar sync", hint: "Mirror my club events to my school calendar." },
-  { key: "directoryVisible", label: "Show me in club rosters", hint: "Other members can see my name." },
+  {
+    key: "calendarSync",
+    label: "Calendar sync",
+    hint: "Mirror my club events to my school calendar.",
+  },
+  {
+    key: "directoryVisible",
+    label: "Show me in club rosters",
+    hint: "Other members can see my name.",
+  },
 ];
 
 function AccountPage() {
-  const { session, prefs, setPref, updateProfile, changePassword, signOut, deleteAccount, myClubs } =
-    useSession();
+  const {
+    session,
+    prefs,
+    setPref,
+    updateProfile,
+    changePassword,
+    signOut,
+    deleteAccount,
+    myClubs,
+    schoolCode,
+  } = useSession();
   const navigate = useNavigate();
   const [name, setName] = useState(session?.name ?? "");
   const [email, setEmail] = useState(session?.email ?? "");
@@ -44,6 +69,7 @@ function AccountPage() {
   const [confirm, setConfirm] = useState("");
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   if (!session) return null;
 
@@ -57,9 +83,9 @@ function AccountPage() {
       <Section title="Profile" desc="How your name shows up on rosters and requests.">
         <form
           className="space-y-4"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            const err = updateProfile({ name, email });
+            const err = await updateProfile({ name, email });
             setProfileMsg(err ? { ok: false, text: err } : { ok: true, text: "Profile saved." });
           }}
         >
@@ -70,7 +96,8 @@ function AccountPage() {
               Role
             </span>
             <p className="text-sm">
-              {roleLabel[session.role]} —{" "}
+              {roleLabel[session.role]}
+              {session.grade ? ` · ${session.grade}` : ""} —{" "}
               <span className="text-muted-foreground">
                 a school admin changes roles for the campus.
               </span>
@@ -81,12 +108,15 @@ function AccountPage() {
         </form>
       </Section>
 
-      <Section title="Password" desc="Update the password you use to sign in.">
+      <Section
+        title="Password"
+        desc="Stored as a salted PBKDF2 hash — changing it signs out every other device."
+      >
         <form
           className="space-y-4"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            const err = changePassword(current, next, confirm);
+            const err = await changePassword(current, next, confirm);
             setPwMsg(err ? { ok: false, text: err } : { ok: true, text: "Password updated." });
             if (!err) {
               setCurrent("");
@@ -97,7 +127,12 @@ function AccountPage() {
         >
           <Field label="Current password" value={current} onChange={setCurrent} type="password" />
           <Field label="New password" value={next} onChange={setNext} type="password" />
-          <Field label="Confirm new password" value={confirm} onChange={setConfirm} type="password" />
+          <Field
+            label="Confirm new password"
+            value={confirm}
+            onChange={setConfirm}
+            type="password"
+          />
           <Msg msg={pwMsg} />
           <Primary>Update password</Primary>
         </form>
@@ -116,7 +151,7 @@ function AccountPage() {
                 role="switch"
                 aria-checked={prefs[r.key]}
                 aria-label={r.label}
-                onClick={() => setPref(r.key, !prefs[r.key])}
+                onClick={() => void setPref(r.key, !prefs[r.key])}
                 className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
                   prefs[r.key] ? "bg-primary" : "bg-secondary"
                 }`}
@@ -136,16 +171,16 @@ function AccountPage() {
         <dl className="grid gap-2 text-sm">
           <Row k="School" v={`${SCHOOL.name} · ${SCHOOL.mascot}`} />
           <Row k="District" v={SCHOOL.district} />
-          <Row k="Access code" v={SCHOOL.joinCode} />
+          {schoolCode && <Row k="Access code" v={schoolCode} />}
           <Row k="Clubs joined" v={String(myClubs.length)} />
         </dl>
       </Section>
 
-      <Section title="Danger zone" desc="Sign out or remove your account from this device.">
+      <Section title="Danger zone" desc="Sign out or delete your account for good.">
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => {
-              signOut();
+            onClick={async () => {
+              await signOut();
               navigate({ to: "/", replace: true });
             }}
             className="rounded-md border border-input px-4 py-2 text-sm font-semibold hover:bg-secondary"
@@ -155,8 +190,13 @@ function AccountPage() {
           {confirmDelete ? (
             <>
               <button
-                onClick={() => {
-                  deleteAccount();
+                onClick={async () => {
+                  const err = await deleteAccount();
+                  if (err) {
+                    setDeleteError(err);
+                    setConfirmDelete(false);
+                    return;
+                  }
                   navigate({ to: "/", replace: true });
                 }}
                 className="rounded-md bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90"
@@ -179,6 +219,7 @@ function AccountPage() {
             </button>
           )}
         </div>
+        {deleteError && <p className="mt-3 text-sm text-destructive">{deleteError}</p>}
       </Section>
     </div>
   );
@@ -213,9 +254,7 @@ function Row({ k, v }: { k: string; v: string }) {
 
 function Msg({ msg }: { msg: { ok: boolean; text: string } | null }) {
   if (!msg) return null;
-  return (
-    <p className={`text-sm ${msg.ok ? "text-success" : "text-destructive"}`}>{msg.text}</p>
-  );
+  return <p className={`text-sm ${msg.ok ? "text-success" : "text-destructive"}`}>{msg.text}</p>;
 }
 
 function Primary({ children }: { children: React.ReactNode }) {

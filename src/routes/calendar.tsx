@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { clubById } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/calendar")({
@@ -27,7 +26,7 @@ export const Route = createFileRoute("/calendar")({
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function CalendarPage() {
-  const { myClubs, events: allEvents } = useSession();
+  const { myClubs, clubs, events: allEvents } = useSession();
   const today = new Date();
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
 
@@ -161,7 +160,7 @@ function CalendarPage() {
                   </span>
                   <span className="font-semibold">{e.title}</span>
                   <span className="text-xs text-muted-foreground">
-                    {clubById(e.clubId)?.name} · {e.location}
+                    {clubs.find((c) => c.id === e.clubId)?.name} · {e.location}
                   </span>
                   <span className="ml-auto text-xs">
                     {e.start} – {e.end}

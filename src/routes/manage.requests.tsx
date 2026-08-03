@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, X } from "lucide-react";
+import { useState } from "react";
 import { useSession } from "@/lib/session";
 import { staffClubs } from "@/lib/staff";
 
@@ -20,17 +21,23 @@ export const Route = createFileRoute("/manage/requests")({
 
 function Requests() {
   const { session, clubs, requests, resolveRequest } = useSession();
+  const [error, setError] = useState("");
   if (!session) return null;
-  const mine = staffClubs(clubs, session.role, session.name);
-  const ids = mine.map((c) => c.id);
+
+  const ids = staffClubs(clubs, session).map((c) => c.id);
   const list = requests.filter((r) => ids.includes(r.clubId));
+
+  const resolve = async (id: string, approve: boolean) => {
+    setError((await resolveRequest(id, approve)) ?? "");
+  };
 
   return (
     <div className="max-w-3xl">
       <h1 className="text-4xl">Join Requests</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Students who followed the instructions on a private club and are waiting on you.
+        Students who followed the instructions on a private club you sponsor and are waiting on you.
       </p>
+      {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
       {list.length === 0 ? (
         <p className="card-surface mt-6 p-6 text-center text-sm text-muted-foreground">
@@ -48,18 +55,19 @@ function Requests() {
                     {r.grade} · {r.email}
                   </p>
                   <p className="mt-2 text-sm">
-                    <span className="font-semibold">{club?.name}</span> — {r.note}
+                    <span className="font-semibold">{club?.name}</span>
+                    {r.note ? ` — ${r.note}` : ""}
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => resolveRequest(r.id, true)}
+                    onClick={() => void resolve(r.id, true)}
                     className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
                   >
                     <Check className="size-4" /> Approve
                   </button>
                   <button
-                    onClick={() => resolveRequest(r.id, false)}
+                    onClick={() => void resolve(r.id, false)}
                     className="flex items-center gap-1.5 rounded-md border border-input px-3 py-2 text-sm font-semibold hover:bg-secondary"
                   >
                     <X className="size-4" /> Decline

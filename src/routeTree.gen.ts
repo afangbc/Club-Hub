@@ -11,11 +11,18 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as ClubsRouteImport } from './routes/clubs'
 import { Route as ManageRouteImport } from './routes/manage'
 import { Route as MyClubsRouteImport } from './routes/my-clubs'
+import { Route as PendingRouteImport } from './routes/pending'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminClubsRouteImport } from './routes/admin.clubs'
+import { Route as AdminTeachersRouteImport } from './routes/admin.teachers'
 import { Route as ManageIndexRouteImport } from './routes/manage.index'
+import { Route as ManageAnnouncementsRouteImport } from './routes/manage.announcements'
 import { Route as ManageEventsRouteImport } from './routes/manage.events'
 import { Route as ManageRequestsRouteImport } from './routes/manage.requests'
 
@@ -27,6 +34,16 @@ const IndexRoute = IndexRouteImport.update({
 const AccountRoute = AccountRouteImport.update({
   id: '/account',
   path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnnouncementsRoute = AnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalendarRoute = CalendarRouteImport.update({
@@ -49,9 +66,34 @@ const MyClubsRoute = MyClubsRouteImport.update({
   path: '/my-clubs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PendingRoute = PendingRouteImport.update({
+  id: '/pending',
+  path: '/pending',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminClubsRoute = AdminClubsRouteImport.update({
+  id: '/clubs',
+  path: '/clubs',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTeachersRoute = AdminTeachersRouteImport.update({
+  id: '/teachers',
+  path: '/teachers',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ManageIndexRoute = ManageIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageAnnouncementsRoute = ManageAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
   getParentRoute: () => ManageRoute,
 } as any)
 const ManageEventsRoute = ManageEventsRouteImport.update({
@@ -68,34 +110,54 @@ const ManageRequestsRoute = ManageRequestsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/announcements': typeof AnnouncementsRoute
   '/calendar': typeof CalendarRoute
   '/clubs': typeof ClubsRoute
   '/manage': typeof ManageRouteWithChildren
   '/my-clubs': typeof MyClubsRoute
+  '/pending': typeof PendingRoute
+  '/admin/clubs': typeof AdminClubsRoute
+  '/admin/teachers': typeof AdminTeachersRoute
+  '/manage/announcements': typeof ManageAnnouncementsRoute
   '/manage/events': typeof ManageEventsRoute
   '/manage/requests': typeof ManageRequestsRoute
+  '/admin/': typeof AdminIndexRoute
   '/manage/': typeof ManageIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/announcements': typeof AnnouncementsRoute
   '/calendar': typeof CalendarRoute
   '/clubs': typeof ClubsRoute
   '/my-clubs': typeof MyClubsRoute
+  '/pending': typeof PendingRoute
+  '/admin/clubs': typeof AdminClubsRoute
+  '/admin/teachers': typeof AdminTeachersRoute
+  '/manage/announcements': typeof ManageAnnouncementsRoute
   '/manage/events': typeof ManageEventsRoute
   '/manage/requests': typeof ManageRequestsRoute
+  '/admin': typeof AdminIndexRoute
   '/manage': typeof ManageIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/announcements': typeof AnnouncementsRoute
   '/calendar': typeof CalendarRoute
   '/clubs': typeof ClubsRoute
   '/manage': typeof ManageRouteWithChildren
   '/my-clubs': typeof MyClubsRoute
+  '/pending': typeof PendingRoute
+  '/admin/clubs': typeof AdminClubsRoute
+  '/admin/teachers': typeof AdminTeachersRoute
+  '/manage/announcements': typeof ManageAnnouncementsRoute
   '/manage/events': typeof ManageEventsRoute
   '/manage/requests': typeof ManageRequestsRoute
+  '/admin/': typeof AdminIndexRoute
   '/manage/': typeof ManageIndexRoute
 }
 export interface FileRouteTypes {
@@ -103,43 +165,66 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/account'
+    | '/admin'
+    | '/announcements'
     | '/calendar'
     | '/clubs'
     | '/manage'
     | '/my-clubs'
+    | '/pending'
+    | '/admin/clubs'
+    | '/admin/teachers'
+    | '/manage/announcements'
     | '/manage/events'
     | '/manage/requests'
+    | '/admin/'
     | '/manage/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/account'
+    | '/announcements'
     | '/calendar'
     | '/clubs'
     | '/my-clubs'
+    | '/pending'
+    | '/admin/clubs'
+    | '/admin/teachers'
+    | '/manage/announcements'
     | '/manage/events'
     | '/manage/requests'
+    | '/admin'
     | '/manage'
   id:
     | '__root__'
     | '/'
     | '/account'
+    | '/admin'
+    | '/announcements'
     | '/calendar'
     | '/clubs'
     | '/manage'
     | '/my-clubs'
+    | '/pending'
+    | '/admin/clubs'
+    | '/admin/teachers'
+    | '/manage/announcements'
     | '/manage/events'
     | '/manage/requests'
+    | '/admin/'
     | '/manage/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
+  AdminRoute: typeof AdminRouteWithChildren
+  AnnouncementsRoute: typeof AnnouncementsRoute
   CalendarRoute: typeof CalendarRoute
   ClubsRoute: typeof ClubsRoute
   ManageRoute: typeof ManageRouteWithChildren
   MyClubsRoute: typeof MyClubsRoute
+  PendingRoute: typeof PendingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -156,6 +241,20 @@ declare module '@tanstack/react-router' {
       path: '/account'
       fullPath: '/account'
       preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/announcements': {
+      id: '/announcements'
+      path: '/announcements'
+      fullPath: '/announcements'
+      preLoaderRoute: typeof AnnouncementsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calendar': {
@@ -186,11 +285,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyClubsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pending': {
+      id: '/pending'
+      path: '/pending'
+      fullPath: '/pending'
+      preLoaderRoute: typeof PendingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/clubs': {
+      id: '/admin/clubs'
+      path: '/clubs'
+      fullPath: '/admin/clubs'
+      preLoaderRoute: typeof AdminClubsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/teachers': {
+      id: '/admin/teachers'
+      path: '/teachers'
+      fullPath: '/admin/teachers'
+      preLoaderRoute: typeof AdminTeachersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/manage/': {
       id: '/manage/'
       path: '/'
       fullPath: '/manage/'
       preLoaderRoute: typeof ManageIndexRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/announcements': {
+      id: '/manage/announcements'
+      path: '/announcements'
+      fullPath: '/manage/announcements'
+      preLoaderRoute: typeof ManageAnnouncementsRouteImport
       parentRoute: typeof ManageRoute
     }
     '/manage/events': {
@@ -210,13 +344,29 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminClubsRoute: typeof AdminClubsRoute
+  AdminTeachersRoute: typeof AdminTeachersRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminClubsRoute: AdminClubsRoute,
+  AdminTeachersRoute: AdminTeachersRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface ManageRouteChildren {
+  ManageAnnouncementsRoute: typeof ManageAnnouncementsRoute
   ManageEventsRoute: typeof ManageEventsRoute
   ManageRequestsRoute: typeof ManageRequestsRoute
   ManageIndexRoute: typeof ManageIndexRoute
 }
 
 const ManageRouteChildren: ManageRouteChildren = {
+  ManageAnnouncementsRoute: ManageAnnouncementsRoute,
   ManageEventsRoute: ManageEventsRoute,
   ManageRequestsRoute: ManageRequestsRoute,
   ManageIndexRoute: ManageIndexRoute,
@@ -228,11 +378,24 @@ const ManageRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
+  AdminRoute: AdminRouteWithChildren,
+  AnnouncementsRoute: AnnouncementsRoute,
   CalendarRoute: CalendarRoute,
   ClubsRoute: ClubsRoute,
   ManageRoute: ManageRouteWithChildren,
   MyClubsRoute: MyClubsRoute,
+  PendingRoute: PendingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

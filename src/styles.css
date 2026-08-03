@@ -69,30 +69,30 @@
 
 :root {
   --radius: 0.5rem;
-  /* Northview Falcons school brand: deep navy + falcon gold */
-  --background: oklch(0.975 0.008 250);
-  --foreground: oklch(0.19 0.045 260);
-  --surface: oklch(0.995 0.003 250);
+  /* Frisco High School Raccoons: royal blue + school gold */
+  --background: oklch(0.976 0.011 250);
+  --foreground: oklch(0.21 0.055 264);
+  --surface: oklch(0.995 0.004 250);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.19 0.045 260);
+  --card-foreground: oklch(0.21 0.055 264);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.19 0.045 260);
-  --primary: oklch(0.29 0.09 262);
-  --primary-foreground: oklch(0.985 0.01 250);
-  --brand: oklch(0.79 0.15 82);
-  --brand-foreground: oklch(0.24 0.06 262);
-  --secondary: oklch(0.94 0.012 250);
-  --secondary-foreground: oklch(0.29 0.09 262);
-  --muted: oklch(0.94 0.012 250);
-  --muted-foreground: oklch(0.52 0.03 258);
-  --accent: oklch(0.93 0.045 85);
-  --accent-foreground: oklch(0.29 0.09 262);
+  --popover-foreground: oklch(0.21 0.055 264);
+  --primary: oklch(0.42 0.175 264);
+  --primary-foreground: oklch(0.99 0.012 100);
+  --brand: oklch(0.845 0.155 89);
+  --brand-foreground: oklch(0.25 0.075 264);
+  --secondary: oklch(0.945 0.018 250);
+  --secondary-foreground: oklch(0.35 0.13 264);
+  --muted: oklch(0.945 0.018 250);
+  --muted-foreground: oklch(0.52 0.035 258);
+  --accent: oklch(0.935 0.065 92);
+  --accent-foreground: oklch(0.32 0.11 264);
   --success: oklch(0.6 0.13 155);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.9 0.015 255);
-  --input: oklch(0.9 0.015 255);
-  --ring: oklch(0.29 0.09 262);
+  --border: oklch(0.895 0.019 255);
+  --input: oklch(0.895 0.019 255);
+  --ring: oklch(0.42 0.175 264);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -166,5 +166,5 @@
   background-color: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 2px oklch(0.19 0.045 260 / 0.06);
+  box-shadow: 0 1px 2px oklch(0.21 0.055 264 / 0.07);
 }

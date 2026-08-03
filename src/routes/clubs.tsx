@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Lock, Globe, Search, Check, Clock } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { type Club } from "@/lib/campus-data";
+import { CATEGORIES, SCHOOL, type Club } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/clubs")({
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/clubs")({
   ),
 });
 
-const categories = ["All", "Academic", "STEM", "Service", "Arts", "Culture", "Athletics"] as const;
+const categories = ["All", ...CATEGORIES] as const;
 
 function ClubsPage() {
   const { clubs } = useSession();
@@ -41,7 +41,7 @@ function ClubsPage() {
         (c) =>
           (cat === "All" || c.category === cat) &&
           (c.name.toLowerCase().includes(q.toLowerCase()) ||
-            c.sponsor.toLowerCase().includes(q.toLowerCase())),
+            c.sponsorName.toLowerCase().includes(q.toLowerCase())),
       ),
     [q, cat, clubs],
   );
@@ -50,7 +50,8 @@ function ClubsPage() {
     <div>
       <h1 className="text-4xl">Club Directory</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Every club and team on campus is listed here — private ones too. Club gatekeeping is bad.
+        Every club and team at {SCHOOL.name} is listed here — private ones too. Club gatekeeping is
+        bad.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -97,8 +98,18 @@ function ClubsPage() {
 export function ClubCard({ club }: { club: Club }) {
   const { myClubs, pending, joinClub, leaveClub, requestClub } = useSession();
   const [showHow, setShowHow] = useState(false);
+  const [note, setNote] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const isMember = myClubs.includes(club.id);
   const isPending = pending.includes(club.id);
+
+  const act = async (call: () => Promise<string | null>) => {
+    if (busy) return;
+    setBusy(true);
+    setError((await call()) ?? "");
+    setBusy(false);
+  };
 
   return (
     <article className="card-surface flex flex-col p-4">
@@ -111,7 +122,11 @@ export function ClubCard({ club }: { club: Club }) {
               : "bg-primary text-primary-foreground"
           }`}
         >
-          {club.visibility === "public" ? <Globe className="size-3" /> : <Lock className="size-3" />}
+          {club.visibility === "public" ? (
+            <Globe className="size-3" />
+          ) : (
+            <Lock className="size-3" />
+          )}
           {club.visibility}
         </span>
       </div>
@@ -126,17 +141,32 @@ export function ClubCard({ club }: { club: Club }) {
         <div className="flex gap-2">
           <dt className="font-semibold text-foreground">Sponsor</dt>
           <dd>
-            {club.sponsor} · {club.members} members
+            {club.sponsorName} · {club.members} {club.members === 1 ? "member" : "members"}
           </dd>
         </div>
       </dl>
 
-      {showHow && club.joinInstructions && (
-        <p className="mt-3 rounded-md bg-secondary px-3 py-2 text-xs text-secondary-foreground">
-          <span className="font-semibold">How to join: </span>
-          {club.joinInstructions}
-        </p>
+      {showHow && (
+        <div className="mt-3 space-y-2">
+          {club.joinInstructions && (
+            <p className="rounded-md bg-secondary px-3 py-2 text-xs text-secondary-foreground">
+              <span className="font-semibold">How to join: </span>
+              {club.joinInstructions}
+            </p>
+          )}
+          {!isPending && !isMember && (
+            <textarea
+              value={note}
+              rows={2}
+              placeholder={`Anything ${club.sponsorName} should know? (optional)`}
+              onChange={(e) => setNote(e.target.value)}
+              className="w-full rounded-md border border-input bg-card px-3 py-2 text-xs outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
+            />
+          )}
+        </div>
       )}
+
+      {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
 
       <div className="mt-4 flex gap-2 pt-1">
         {isMember ? (
@@ -145,18 +175,20 @@ export function ClubCard({ club }: { club: Club }) {
               <Check className="size-4" /> Joined
             </span>
             <button
-              onClick={() => leaveClub(club.id)}
-              className="rounded-md border border-input px-3 py-2 text-sm font-semibold hover:bg-secondary"
+              disabled={busy}
+              onClick={() => void act(() => leaveClub(club.id))}
+              className="rounded-md border border-input px-3 py-2 text-sm font-semibold hover:bg-secondary disabled:opacity-60"
             >
               Leave
             </button>
           </>
         ) : club.visibility === "public" ? (
           <button
-            onClick={() => joinClub(club.id)}
-            className="flex-1 rounded-md bg-primary py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            disabled={busy}
+            onClick={() => void act(() => joinClub(club.id))}
+            className="flex-1 rounded-md bg-primary py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
           >
-            Join club
+            {busy ? "Joining…" : "Join club"}
           </button>
         ) : (
           <>
@@ -166,19 +198,24 @@ export function ClubCard({ club }: { club: Club }) {
             >
               {showHow ? "Hide steps" : "How to join"}
             </button>
-            <button
-              disabled={isPending}
-              onClick={() => requestClub(club.id)}
-              className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-            >
-              {isPending ? (
-                <>
-                  <Clock className="size-3.5" /> Requested
-                </>
-              ) : (
-                "Request"
-              )}
-            </button>
+            {isPending ? (
+              <button
+                disabled={busy}
+                onClick={() => void act(() => leaveClub(club.id))}
+                title="Withdraw your request"
+                className="flex items-center gap-1.5 rounded-md border border-input px-3 py-2 text-sm font-semibold hover:bg-secondary disabled:opacity-60"
+              >
+                <Clock className="size-3.5" /> Requested
+              </button>
+            ) : (
+              <button
+                disabled={busy}
+                onClick={() => void act(() => requestClub(club.id, note))}
+                className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+              >
+                Request
+              </button>
+            )}
           </>
         )}
       </div>

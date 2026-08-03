@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Clock } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { clubById } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 import { ClubCard } from "./clubs";
 
@@ -25,10 +24,15 @@ export const Route = createFileRoute("/my-clubs")({
 });
 
 function MyClubs() {
-  const { myClubs, pending, clubs, events } = useSession();
+  const { myClubs, pending, clubs, events, announcements } = useSession();
+  const today = new Date().toISOString().slice(0, 10);
   const mine = clubs.filter((c) => myClubs.includes(c.id));
   const requested = clubs.filter((c) => pending.includes(c.id));
-  const upcoming = events.filter((e) => myClubs.includes(e.clubId)).slice(0, 4);
+  const upcoming = events
+    .filter((e) => myClubs.includes(e.clubId) && e.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 4);
+  const latest = announcements.filter((a) => myClubs.includes(a.clubId)).slice(0, 3);
 
   return (
     <div>
@@ -72,7 +76,7 @@ function MyClubs() {
                 <div>
                   <p className="font-semibold">{c.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Waiting on {c.sponsor} to approve you.
+                    Waiting on {c.sponsorName} to approve you.
                   </p>
                 </div>
                 <span className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-semibold">
@@ -95,7 +99,7 @@ function MyClubs() {
               >
                 <span className="font-semibold">{e.title}</span>
                 <span className="text-xs text-muted-foreground">
-                  {clubById(e.clubId)?.name} · {e.location}
+                  {clubs.find((c) => c.id === e.clubId)?.name} · {e.location}
                 </span>
                 <span className="ml-auto text-xs font-semibold">
                   {new Date(`${e.date}T12:00:00`).toLocaleDateString(undefined, {
@@ -105,6 +109,28 @@ function MyClubs() {
                   })}{" "}
                   · {e.start}
                 </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {latest.length > 0 && (
+        <section className="mt-10">
+          <div className="flex items-end justify-between gap-4">
+            <h2 className="text-2xl">From your sponsors</h2>
+            <Link to="/announcements" className="text-xs font-semibold underline underline-offset-2">
+              See all announcements
+            </Link>
+          </div>
+          <div className="mt-3 space-y-2">
+            {latest.map((a) => (
+              <div key={a.id} className="card-surface px-4 py-3">
+                <p className="text-sm font-semibold">{a.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  {clubs.find((c) => c.id === a.clubId)?.name} · {a.author}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{a.body}</p>
               </div>
             ))}
           </div>

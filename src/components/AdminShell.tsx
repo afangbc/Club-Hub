@@ -1,63 +1,58 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, CalendarDays, Compass, LogOut, Settings, ShieldCheck, Users } from "lucide-react";
+import { Building2, KeyRound, LogOut, Settings, UserCog } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { SCHOOL, homeFor, roleLabel } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 const nav = [
-  { to: "/clubs", label: "Club Directory", icon: Compass },
-  { to: "/my-clubs", label: "My Clubs", icon: Users },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays },
-  { to: "/announcements", label: "Announcements", icon: Bell },
+  { to: "/admin", label: "Campus", icon: KeyRound },
+  { to: "/admin/clubs", label: "Clubs", icon: Building2 },
+  { to: "/admin/teachers", label: "Staff Accounts", icon: UserCog },
 ] as const;
 
-export function AppShell({ children }: { children: ReactNode }) {
-  const { session, joined, ready, signOut } = useSession();
+export function AdminShell({ children }: { children: ReactNode }) {
+  const { session, ready, signOut, pendingStaff } = useSession();
   const navigate = useNavigate();
-  const isStaff = session?.role === "teacher" || session?.role === "admin";
   const isAdmin = session?.role === "admin" && session.status === "active";
-  const locked = isStaff && session?.status !== "active";
 
   useEffect(() => {
     if (!ready) return;
     if (!session) navigate({ to: "/", replace: true });
-    else if (locked) navigate({ to: "/pending", replace: true });
-    else if (!joined) navigate({ to: "/", replace: true });
-  }, [ready, session, joined, locked, navigate]);
+    else if (!isAdmin) navigate({ to: homeFor(session), replace: true });
+  }, [ready, session, isAdmin, navigate]);
 
-  if (!ready || !session || !joined || locked) return null;
+  if (!ready || !session || !isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-secondary">
       <header className="sticky top-0 z-30 border-b border-border bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-          <Link to="/clubs" className="flex items-center gap-2">
+          <Link to="/admin" className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-md bg-brand font-display text-lg text-brand-foreground">
               F
             </span>
-            <span className="font-display text-2xl leading-none">ClubHub</span>
+            <span className="font-display text-2xl leading-none">
+              ClubHub <span className="text-brand">Admin</span>
+            </span>
           </Link>
           <span className="hidden text-xs uppercase tracking-widest opacity-70 sm:inline">
             {SCHOOL.name} · {SCHOOL.district}
           </span>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold leading-tight">{session.name}</p>
               <p className="text-xs opacity-70">{roleLabel[session.role]}</p>
             </div>
-            {isStaff && !locked && (
-              <Link
-                to={homeFor(session)}
-                className="flex items-center gap-1.5 rounded-md border border-primary-foreground/25 px-3 py-1.5 text-xs font-semibold hover:bg-primary-foreground/10"
-              >
-                <ShieldCheck className="size-3.5" />
-                {isAdmin ? "Admin console" : "Sponsor console"}
-              </Link>
-            )}
+            <Link
+              to="/clubs"
+              className="rounded-md border border-primary-foreground/25 px-3 py-1.5 text-xs font-semibold hover:bg-primary-foreground/10"
+            >
+              Student view
+            </Link>
             <Link
               to="/account"
               aria-label="Account settings"
-              className="rounded-md p-2 transition-colors hover:bg-primary-foreground/10"
+              className="rounded-md p-2 hover:bg-primary-foreground/10"
             >
               <Settings className="size-4" />
             </Link>
@@ -67,7 +62,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 navigate({ to: "/", replace: true });
               }}
               aria-label="Sign out"
-              className="rounded-md p-2 transition-colors hover:bg-primary-foreground/10"
+              className="rounded-md p-2 hover:bg-primary-foreground/10"
             >
               <LogOut className="size-4" />
             </button>
@@ -78,12 +73,18 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               key={n.to}
               to={n.to}
+              activeOptions={{ exact: n.to === "/admin" }}
               activeProps={{ className: "border-brand text-brand" }}
-              inactiveProps={{ className: "border-transparent opacity-75 hover:opacity-100" }}
+              inactiveProps={{ className: "border-transparent opacity-70 hover:opacity-100" }}
               className="flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-semibold"
             >
               <n.icon className="size-4" />
               {n.label}
+              {n.to === "/admin/teachers" && pendingStaff.length > 0 && (
+                <span className="rounded-full bg-brand px-1.5 text-[10px] font-bold text-brand-foreground">
+                  {pendingStaff.length}
+                </span>
+              )}
             </Link>
           ))}
         </nav>

@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarDays, Lock, Globe, Users } from "lucide-react";
+import { CalendarDays, Globe, Lock, Megaphone, Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
+import { ClubForm } from "@/components/ClubForm";
+import type { Club } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 import { staffClubs } from "@/lib/staff";
-import type { Club } from "@/lib/campus-data";
 
 export const Route = createFileRoute("/manage/")({
   head: () => ({
@@ -12,77 +13,119 @@ export const Route = createFileRoute("/manage/")({
       {
         name: "description",
         content:
-          "The ClubHub console for club sponsors and school administrators: manage clubs, join requests, and meetings.",
+          "The ClubHub console for club sponsors: create clubs, manage rosters, post meetings, and send announcements.",
       },
       { property: "og:title", content: "Sponsor Console — ClubHub Staff" },
-      {
-        property: "og:description",
-        content: "Manage your clubs, approve members, and post meetings.",
-      },
+      { property: "og:description", content: "Create a club, approve members, and post meetings." },
     ],
   }),
   component: Dashboard,
 });
 
 function Dashboard() {
-  const { session, clubs, events, requests } = useSession();
+  const { session, clubs, events, requests, announcements, createClub } = useSession();
+  const [creating, setCreating] = useState(false);
   if (!session) return null;
-  const mine = staffClubs(clubs, session.role, session.name);
+
+  const mine = staffClubs(clubs, session);
   const ids = mine.map((c) => c.id);
   const myRequests = requests.filter((r) => ids.includes(r.clubId));
   const myEvents = events.filter((e) => ids.includes(e.clubId));
+  const myPosts = announcements.filter((a) => ids.includes(a.clubId));
 
   return (
     <div>
-      <h1 className="text-4xl">
-        {session.role === "admin" ? "Campus console" : "Sponsor console"}
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {session.role === "admin"
-          ? "Every club at your school, and the requests waiting on a sponsor."
-          : "The clubs you sponsor, their rosters, and their meetings."}
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-4xl">Sponsor console</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            The clubs you sponsor, their rosters, and everything you post to them.
+          </p>
+        </div>
+        <button
+          onClick={() => setCreating((c) => !c)}
+          className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          <Plus className="size-4" /> {creating ? "Close" : "Create a club"}
+        </button>
+      </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
-        <Stat icon={Users} label="Clubs managed" value={mine.length} />
+      {creating && (
+        <section className="card-surface mt-4 p-5">
+          <h2 className="text-2xl leading-tight">Create a club</h2>
+          <p className="mb-4 mt-1 text-xs text-muted-foreground">
+            You're listed as the sponsor. Students see it in the directory as soon as you save.
+          </p>
+          <ClubForm
+            submitLabel="Create club"
+            onCancel={() => setCreating(false)}
+            onSubmit={async (input) => {
+              const error = await createClub(input);
+              if (!error) setCreating(false);
+              return error;
+            }}
+          />
+        </section>
+      )}
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat icon={Users} label="Clubs sponsored" value={mine.length} />
         <Stat icon={Users} label="Pending requests" value={myRequests.length} />
         <Stat icon={CalendarDays} label="Scheduled meetings" value={myEvents.length} />
+        <Stat icon={Megaphone} label="Announcements posted" value={myPosts.length} />
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          to="/manage/requests"
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-        >
-          Review requests
-        </Link>
         <Link
           to="/manage/events"
           className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-accent"
         >
           Post a meeting
         </Link>
+        <Link
+          to="/manage/announcements"
+          className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-accent"
+        >
+          Send an announcement
+        </Link>
+        <Link
+          to="/manage/requests"
+          className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-accent"
+        >
+          Review requests
+        </Link>
       </div>
 
       <h2 className="mt-8 text-2xl">Your clubs</h2>
-      <div className="mt-3 grid gap-4 lg:grid-cols-2">
-        {mine.map((c) => (
-          <ClubEditor key={c.id} club={c} pending={requests.filter((r) => r.clubId === c.id).length} />
-        ))}
-      </div>
+      {mine.length === 0 ? (
+        <div className="card-surface mt-3 p-10 text-center">
+          <p className="text-sm text-muted-foreground">
+            You don't sponsor a club yet. Create one and it shows up in the student directory
+            immediately — or ask a school admin to move an existing club to your name.
+          </p>
+          <button
+            onClick={() => setCreating(true)}
+            className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Create your first club
+          </button>
+        </div>
+      ) : (
+        <div className="mt-3 grid gap-4 lg:grid-cols-2">
+          {mine.map((c) => (
+            <ClubEditor
+              key={c.id}
+              club={c}
+              pending={requests.filter((r) => r.clubId === c.id).length}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Users;
-  label: string;
-  value: number;
-}) {
+function Stat({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: number }) {
   return (
     <div className="card-surface flex items-center gap-3 p-4">
       <span className="grid size-10 place-items-center rounded-md bg-accent text-accent-foreground">
@@ -97,13 +140,10 @@ function Stat({
 }
 
 function ClubEditor({ club, pending }: { club: Club; pending: number }) {
-  const { updateClub } = useSession();
+  const { updateClub, deleteClub } = useSession();
   const [open, setOpen] = useState(false);
-  const [meets, setMeets] = useState(club.meets);
-  const [room, setRoom] = useState(club.room);
-  const [blurb, setBlurb] = useState(club.blurb);
-  const [instructions, setInstructions] = useState(club.joinInstructions ?? "");
-  const [saved, setSaved] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [error, setError] = useState("");
 
   return (
     <article className="card-surface p-4">
@@ -111,22 +151,29 @@ function ClubEditor({ club, pending }: { club: Club; pending: number }) {
         <div>
           <h3 className="text-2xl leading-tight">{club.name}</h3>
           <p className="text-xs text-muted-foreground">
-            {club.members} members · {pending} pending
+            {club.members} members · {pending} pending · {club.meets}
           </p>
         </div>
         <button
-          onClick={() =>
-            updateClub(club.id, {
-              visibility: club.visibility === "public" ? "private" : "public",
-            })
+          onClick={async () =>
+            setError(
+              (await updateClub(club.id, {
+                visibility: club.visibility === "public" ? "private" : "public",
+              })) ?? "",
+            )
           }
+          title="Switch between instant joining and sponsor approval"
           className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${
             club.visibility === "public"
               ? "bg-accent text-accent-foreground"
               : "bg-primary text-primary-foreground"
           }`}
         >
-          {club.visibility === "public" ? <Globe className="size-3" /> : <Lock className="size-3" />}
+          {club.visibility === "public" ? (
+            <Globe className="size-3" />
+          ) : (
+            <Lock className="size-3" />
+          )}
           {club.visibility}
         </button>
       </div>
@@ -139,78 +186,49 @@ function ClubEditor({ club, pending }: { club: Club; pending: number }) {
       </button>
 
       {open && (
-        <form
-          className="mt-3 space-y-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            updateClub(club.id, { meets, room, blurb, joinInstructions: instructions.trim() });
-            setSaved(true);
-          }}
-        >
-          <Input label="Meeting time" value={meets} onChange={setMeets} />
-          <Input label="Room" value={room} onChange={setRoom} />
-          <Area label="Description" value={blurb} onChange={setBlurb} />
-          <Area
-            label="How to join (private clubs)"
-            value={instructions}
-            onChange={setInstructions}
+        <div className="mt-3">
+          <ClubForm
+            key={club.id}
+            submitLabel="Save changes"
+            initial={{
+              name: club.name,
+              category: club.category,
+              visibility: club.visibility,
+              meets: club.meets,
+              room: club.room,
+              blurb: club.blurb,
+              joinInstructions: club.joinInstructions ?? "",
+            }}
+            onSubmit={(input) => updateClub(club.id, input)}
           />
-          {saved && <p className="text-sm text-success">Saved — students see this now.</p>}
-          <button
-            type="submit"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-          >
-            Save changes
-          </button>
-        </form>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {confirmDelete ? (
+              <>
+                <button
+                  onClick={async () => setError((await deleteClub(club.id)) ?? "")}
+                  className="rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Yes, delete
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="rounded-md px-3 py-2 text-sm font-semibold hover:bg-secondary"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center gap-1.5 rounded-md border border-destructive px-3 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="size-4" /> Delete club
+              </button>
+            )}
+          </div>
+        </div>
       )}
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
     </article>
-  );
-}
-
-function Input({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
-      />
-    </label>
-  );
-}
-
-function Area({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
-      <textarea
-        value={value}
-        rows={3}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
-      />
-    </label>
   );
 }

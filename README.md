@@ -30,3 +30,43 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## How the backend works
+
+Accounts, clubs, memberships, meetings, and announcements live server-side in
+`src/server`, not in the browser.
+
+- **Storage** — the whole database is one JSON document written through
+  `src/server/storage.ts`. It lands in `.data/clubhub.json` (override with
+  `CLUBHUB_DATA_FILE`) and is seeded with Frisco High School on first run.
+  Writes are atomic and serialized; swapping in Postgres or SQLite means writing
+  one more driver behind the same interface.
+- **Passwords** — hashed with PBKDF2-HMAC-SHA256, 210,000 iterations, a random
+  16-byte salt per account, verified in constant time. Plaintext is never
+  stored or logged. WebCrypto only, so the same code runs on Node and on edge
+  runtimes.
+- **Sessions** — a 256-bit random token in an HttpOnly, SameSite=Lax cookie
+  (Secure in production). Only the SHA-256 of the token is stored, so a database
+  dump can't be replayed as a login. Changing a password revokes every session,
+  and declining a staff account signs it out immediately.
+- **Authorization** — every mutation in `src/server/service.ts` re-derives the
+  caller from the cookie and re-checks the rule. Teachers can only touch clubs
+  they sponsor; only admins reassign sponsors, rotate the campus code, or
+  approve staff. The browser never decides permissions.
+- **Sign-in throttling** — 10 failed attempts per email in 15 minutes.
+
+`src/lib/api.ts` is the RPC surface. Each handler reaches the service through a
+dynamic import, so no server-only code can be pulled into the client bundle.
+
+### Demo accounts
+
+All seeded accounts use the password `raccoons26`, and the starting campus code
+is `RACCOONS26`.
+
+| Role | Email |
+| --- | --- |
+| Student | `jordan.rivera.123@k12.friscoisd.org` |
+| Teacher | `marcus.alvarez@friscoisd.org` |
+| School admin | `alicia.nguyen@friscoisd.org` |
+
+Delete `.data/clubhub.json` to reset the campus back to seed data.
