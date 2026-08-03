@@ -15,6 +15,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as ClubsRouteImport } from './routes/clubs'
+import { Route as CreateSchoolRouteImport } from './routes/create-school'
 import { Route as ManageRouteImport } from './routes/manage'
 import { Route as MyClubsRouteImport } from './routes/my-clubs'
 import { Route as PendingRouteImport } from './routes/pending'
@@ -55,6 +56,11 @@ const CalendarRoute = CalendarRouteImport.update({
 const ClubsRoute = ClubsRouteImport.update({
   id: '/clubs',
   path: '/clubs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateSchoolRoute = CreateSchoolRouteImport.update({
+  id: '/create-school',
+  path: '/create-school',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManageRoute = ManageRouteImport.update({
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/announcements': typeof AnnouncementsRoute
   '/calendar': typeof CalendarRoute
   '/clubs': typeof ClubsRoute
+  '/create-school': typeof CreateSchoolRoute
   '/manage': typeof ManageRouteWithChildren
   '/my-clubs': typeof MyClubsRoute
   '/pending': typeof PendingRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/announcements': typeof AnnouncementsRoute
   '/calendar': typeof CalendarRoute
   '/clubs': typeof ClubsRoute
+  '/create-school': typeof CreateSchoolRoute
   '/my-clubs': typeof MyClubsRoute
   '/pending': typeof PendingRoute
   '/admin/clubs': typeof AdminClubsRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/announcements': typeof AnnouncementsRoute
   '/calendar': typeof CalendarRoute
   '/clubs': typeof ClubsRoute
+  '/create-school': typeof CreateSchoolRoute
   '/manage': typeof ManageRouteWithChildren
   '/my-clubs': typeof MyClubsRoute
   '/pending': typeof PendingRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/calendar'
     | '/clubs'
+    | '/create-school'
     | '/manage'
     | '/my-clubs'
     | '/pending'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/calendar'
     | '/clubs'
+    | '/create-school'
     | '/my-clubs'
     | '/pending'
     | '/admin/clubs'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/calendar'
     | '/clubs'
+    | '/create-school'
     | '/manage'
     | '/my-clubs'
     | '/pending'
@@ -234,6 +246,7 @@ export interface RootRouteChildren {
   AnnouncementsRoute: typeof AnnouncementsRoute
   CalendarRoute: typeof CalendarRoute
   ClubsRoute: typeof ClubsRoute
+  CreateSchoolRoute: typeof CreateSchoolRoute
   ManageRoute: typeof ManageRouteWithChildren
   MyClubsRoute: typeof MyClubsRoute
   PendingRoute: typeof PendingRoute
@@ -281,6 +294,13 @@ declare module '@tanstack/react-router' {
       path: '/clubs'
       fullPath: '/clubs'
       preLoaderRoute: typeof ClubsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/create-school': {
+      id: '/create-school'
+      path: '/create-school'
+      fullPath: '/create-school'
+      preLoaderRoute: typeof CreateSchoolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manage': {
@@ -403,6 +423,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnnouncementsRoute: AnnouncementsRoute,
   CalendarRoute: CalendarRoute,
   ClubsRoute: ClubsRoute,
+  CreateSchoolRoute: CreateSchoolRoute,
   ManageRoute: ManageRouteWithChildren,
   MyClubsRoute: MyClubsRoute,
   PendingRoute: PendingRoute,

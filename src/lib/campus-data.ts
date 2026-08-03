@@ -140,9 +140,15 @@ export const roleLabel: Record<Role, string> = {
 export function emailProblem(email: string, role: Role): string | null {
   const value = email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Enter your full school email address.";
+  const domain = value.split("@")[1] ?? "";
+  const personalDomains = new Set([
+    "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "aol.com",
+  ]);
+  if (role === "admin" && personalDomains.has(domain))
+    return "Admins must use an email address issued by their school or district.";
   if (role === "student" && !value.endsWith(`@${SCHOOL.studentDomain}`))
     return `Students sign in with their @${SCHOOL.studentDomain} address.`;
-  if (role !== "student" && !value.endsWith(`@${SCHOOL.staffDomain}`))
+  if (role === "teacher" && !value.endsWith(`@${SCHOOL.staffDomain}`))
     return `Staff sign in with their @${SCHOOL.staffDomain} address.`;
   return null;
 }
@@ -160,8 +166,9 @@ export function passwordProblem(password: string): string | null {
  */
 export function homeFor(
   session: Session | null,
-): "/" | "/clubs" | "/manage" | "/admin" | "/pending" {
+): "/" | "/clubs" | "/manage" | "/admin" | "/pending" | "/create-school" {
   if (!session) return "/";
+  if (session.role === "admin" && !session.schoolId) return "/create-school";
   if (session.role === "student") return "/clubs";
   if (session.status !== "active") return "/pending";
   return session.role === "admin" ? "/admin" : "/manage";

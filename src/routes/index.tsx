@@ -51,7 +51,7 @@ function Index() {
   const destination = homeFor(session);
 
   useEffect(() => {
-    if (ready && session && joined) navigate({ to: destination, replace: true });
+    if (ready && session && (joined || session.role === "admin")) navigate({ to: destination, replace: true });
   }, [ready, session, joined, destination, navigate]);
 
   const step: 1 | 2 = session ? 2 : 1;

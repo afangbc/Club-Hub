@@ -11,8 +11,20 @@ async function load(): Promise<Database> {
 
   if (raw) {
     try {
-      const parsed = JSON.parse(raw) as Database;
+      const parsed = JSON.parse(raw) as Database & { school?: Database["schools"][number] };
       if (parsed.version === DB_VERSION) return parsed;
+      if (parsed.version === 1 && parsed.school) {
+        const migrated: Database = {
+          ...parsed,
+          version: DB_VERSION,
+          schools: [parsed.school],
+          schoolVerifications: [],
+        };
+        delete (migrated as Database & { school?: unknown }).school;
+        await driver.write(JSON.stringify(migrated, null, 2));
+        console.info("[clubhub] Migrated database from version 1 to version 2.");
+        return migrated;
+      }
       console.warn(
         `[clubhub] Database is version ${parsed.version}, expected ${DB_VERSION}. Reseeding.`,
       );

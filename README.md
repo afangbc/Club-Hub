@@ -53,6 +53,8 @@ Accounts, clubs, memberships, meetings, and announcements live server-side in
   they sponsor; only admins reassign sponsors, rotate the campus code, or
   approve staff. The browser never decides permissions.
 - **Sign-in throttling** — 10 failed attempts per email in 15 minutes.
+- **School onboarding** — unassociated admins verify their email with a six-digit,
+  ten-minute code before creating a school and receiving a unique campus join code.
 
 `src/lib/api.ts` is the RPC surface. Each handler reaches the service through a
 dynamic import, so no server-only code can be pulled into the client bundle.
@@ -86,3 +88,10 @@ database.
 The optional `CLUBHUB_REDIS_KEY` variable changes the Redis key used for the
 database. Keep the default unless multiple ClubHub installations share one Redis
 database. Never expose the Upstash REST token to browser code or commit it.
+
+### Verification email setup
+
+School creation sends one-time codes through Resend. In Vercel, add
+`RESEND_API_KEY` and `CLUBHUB_FROM_EMAIL` to Production, Preview, and Development.
+The sender address or its domain must be verified in Resend. Codes expire after ten
+minutes, allow five attempts, and cannot be resent more than once per minute.

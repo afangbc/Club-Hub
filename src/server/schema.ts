@@ -9,7 +9,7 @@ import {
 } from "@/lib/campus-data";
 import { hashPassword } from "./crypto";
 
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export type SchoolRecord = {
   id: string;
@@ -84,15 +84,28 @@ export type SessionRecord = {
   expiresAt: string;
 };
 
+export type SchoolVerificationRecord = {
+  userId: string;
+  email: string;
+  codeHash: string;
+  expiresAt: string;
+  sentAt: string;
+  attempts: number;
+  schoolName: string;
+  mascot: string;
+  district: string;
+};
+
 export type Database = {
   version: number;
-  school: SchoolRecord;
+  schools: SchoolRecord[];
   users: UserRecord[];
   clubs: ClubRecord[];
   memberships: MembershipRecord[];
   events: EventRecord[];
   announcements: AnnouncementRecord[];
   sessions: SessionRecord[];
+  schoolVerifications: SchoolVerificationRecord[];
 };
 
 function day(offset: number): string {
@@ -498,13 +511,13 @@ export async function buildSeedDatabase(): Promise<Database> {
 
   return {
     version: DB_VERSION,
-    school: {
+    schools: [{
       id: SCHOOL_ID,
       name: SCHOOL.name,
       mascot: SCHOOL.mascot,
       district: SCHOOL.district,
       joinCode: SCHOOL.defaultJoinCode,
-    },
+    }],
     users,
     clubs: CLUBS.map((c) => ({ ...c, schoolId: SCHOOL_ID, createdAt: now })),
     memberships: MEMBERSHIPS.map(([clubId, userId, status, note], i) => ({
@@ -518,5 +531,6 @@ export async function buildSeedDatabase(): Promise<Database> {
     events: EVENTS.map((e, i) => ({ ...e, id: `e-seed-${i}` })),
     announcements: ANNOUNCEMENTS.map((a, i) => ({ ...a, id: `a-seed-${i}` })),
     sessions: [],
+    schoolVerifications: [],
   };
 }

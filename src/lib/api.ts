@@ -63,6 +63,23 @@ export const joinSchoolFn = createServerFn({ method: "POST" })
     return joinSchool(data);
   });
 
+export const requestSchoolVerificationFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { name: string; mascot: string; district: string }) => {
+    const raw = (d ?? {}) as Partial<typeof d>;
+    return { name: str(raw.name, 120), mascot: str(raw.mascot, 80), district: str(raw.district, 120) };
+  })
+  .handler(async ({ data }): Promise<Result> => {
+    const { requestSchoolVerification } = await import("@/server/service");
+    return requestSchoolVerification(data);
+  });
+
+export const createSchoolFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { code: string }) => ({ code: str((d ?? {}).code, 12) }))
+  .handler(async ({ data }) => {
+    const { createSchool } = await import("@/server/service");
+    return createSchool(data);
+  });
+
 export const updateProfileFn = createServerFn({ method: "POST" })
   .inputValidator((d: { name: string; email: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;

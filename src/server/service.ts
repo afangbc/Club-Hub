@@ -23,7 +23,8 @@ import {
   startSession,
   throttled,
 } from "./auth";
-import { hashPassword, newId, verifyPassword } from "./crypto";
+import { hashPassword, hashToken, newId, verifyPassword } from "./crypto";
+import { sendSchoolVerification } from "./email";
 import type { ClubRecord, Database, UserRecord } from "./schema";
 import { getDatabase, transaction } from "./store";
 
@@ -134,11 +135,12 @@ export async function loadState(): Promise<AppState> {
   };
 
   // Not signed in, or signed in but not through the campus code screen yet.
-  if (!user || user.schoolId !== db.school.id) return empty;
+  const school = db.schools.find((candidate) => candidate.id === user?.schoolId);
+  if (!user || !school) return empty;
   // Staff waiting on approval get their own status back and nothing else.
   if (user.role !== "student" && user.status !== "active") return empty;
 
-  const clubs = db.clubs.filter((c) => c.schoolId === db.school.id);
+  const clubs = db.clubs.filter((c) => c.schoolId === school.id);
   const mine = db.memberships.filter((m) => m.userId === user.id);
   const myClubIds = mine.filter((m) => m.status === "member").map((m) => m.clubId);
 
@@ -166,7 +168,7 @@ export async function loadState(): Promise<AppState> {
 
   const staff: StaffAccount[] = isActiveAdmin(user)
     ? db.users
-        .filter((u) => u.role === "teacher" || u.role === "admin")
+        .filter((u) => u.schoolId === school.id && (u.role === "teacher" || u.role === "admin"))
         .map((u) => ({
           id: u.id,
           name: u.name,
@@ -180,7 +182,7 @@ export async function loadState(): Promise<AppState> {
 
   const users: SchoolAccount[] = isActiveAdmin(user)
     ? db.users
-        .filter((account) => account.schoolId === db.school.id)
+        .filter((account) => account.schoolId === school.id)
         .map((account) => ({
           id: account.id,
           name: account.name,
@@ -194,7 +196,7 @@ export async function loadState(): Promise<AppState> {
   return {
     user: toSession(user),
     prefs: user.prefs,
-    school: { name: db.school.name, mascot: db.school.mascot, district: db.school.district },
+    school: { name: school.name, mascot: school.mascot, district: school.district },
     clubs: clubs.map((c) => toClub(db, c)),
     events: db.events.filter((e) => clubs.some((c) => c.id === e.clubId)),
     announcements: visibleAnnouncements
@@ -212,7 +214,7 @@ export async function loadState(): Promise<AppState> {
     requests,
     staff,
     users,
-    schoolCode: isActiveAdmin(user) ? db.school.joinCode : "",
+    schoolCode: isActiveAdmin(user) ? school.joinCode : "",
   };
 }
 
@@ -301,14 +303,102 @@ export async function joinSchool(input: { code: string }): Promise<Result> {
   if (!user) return fail("You're signed out. Sign in and try again.");
 
   const db = await getDatabase();
-  if (norm(input.code) !== norm(db.school.joinCode))
+  const school = db.schools.find((candidate) => norm(candidate.joinCode) === norm(input.code));
+  if (!school)
     return fail("That code doesn't match a campus. Ask your sponsor for the current one.");
 
   await transaction((next) => {
     const record = next.users.find((u) => u.id === user.id);
-    if (record) record.schoolId = next.school.id;
+    if (record) record.schoolId = school.id;
   });
   return ok;
+}
+
+type SchoolSetupInput = { name: string; mascot: string; district: string };
+
+function validateSchoolSetup(input: SchoolSetupInput): string | null {
+  if (input.name.trim().length < 3) return "Enter the full school name.";
+  if (input.district.trim().length < 2) return "Enter the school district or organization.";
+  if (input.mascot.trim().length < 2) return "Enter the school mascot.";
+  return null;
+}
+
+function verificationCode(): string {
+  const bytes = crypto.getRandomValues(new Uint32Array(1));
+  return String(100000 + ((bytes[0] ?? 0) % 900000));
+}
+
+function schoolCode(name: string): string {
+  const prefix = name.replace(/[^a-z0-9]/gi, "").slice(0, 5).toUpperCase() || "SCHOOL";
+  const bytes = crypto.getRandomValues(new Uint32Array(1));
+  return `${prefix}-${String((bytes[0] ?? 0) % 10000).padStart(4, "0")}`;
+}
+
+export async function requestSchoolVerification(input: SchoolSetupInput): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return fail("You're signed out. Sign in and try again.");
+  if (user.role !== "admin") return fail("Only a school admin can create a school.");
+  if (user.schoolId) return fail("Your account already belongs to a school.");
+  const problem = validateSchoolSetup(input);
+  if (problem) return fail(problem);
+
+  const existing = (await getDatabase()).schoolVerifications.find((item) => item.userId === user.id);
+  if (existing && Date.now() - Date.parse(existing.sentAt) < 60_000)
+    return fail("Wait one minute before requesting another code.");
+
+  const code = verificationCode();
+  try {
+    await sendSchoolVerification(user.email, code);
+  } catch (error) {
+    console.error("[clubhub] Verification email failed", error);
+    return fail("We couldn't send the verification email. Ask the site owner to check email settings.");
+  }
+
+  await transaction(async (db) => {
+    db.schoolVerifications = db.schoolVerifications.filter((item) => item.userId !== user.id);
+    db.schoolVerifications.push({
+      userId: user.id,
+      email: norm(user.email),
+      codeHash: await hashToken(code),
+      expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+      sentAt: new Date().toISOString(),
+      attempts: 0,
+      schoolName: input.name.trim(),
+      mascot: input.mascot.trim(),
+      district: input.district.trim(),
+    });
+  });
+  return ok;
+}
+
+export type CreateSchoolResult = Result & { joinCode?: string };
+
+export async function createSchool(input: { code: string }): Promise<CreateSchoolResult> {
+  const user = await currentUser();
+  if (!user) return fail("You're signed out. Sign in and try again.");
+  if (user.role !== "admin") return fail("Only a school admin can create a school.");
+  if (user.schoolId) return fail("Your account already belongs to a school.");
+
+  return transaction(async (db): Promise<CreateSchoolResult> => {
+    const verification = db.schoolVerifications.find((item) => item.userId === user.id);
+    if (!verification || verification.email !== norm(user.email)) return fail("Request a new verification code.");
+    if (Date.parse(verification.expiresAt) < Date.now()) return fail("That code expired. Request a new one.");
+    if (verification.attempts >= 5) return fail("Too many attempts. Request a new code.");
+    verification.attempts += 1;
+    if ((await hashToken(input.code.trim())) !== verification.codeHash) return fail("That verification code is incorrect.");
+
+    let joinCode = schoolCode(verification.schoolName);
+    while (db.schools.some((school) => norm(school.joinCode) === norm(joinCode)))
+      joinCode = schoolCode(verification.schoolName);
+    const id = newId("sch");
+    db.schools.push({ id, name: verification.schoolName, mascot: verification.mascot, district: verification.district, joinCode });
+    const record = db.users.find((candidate) => candidate.id === user.id);
+    if (!record) return fail("Account not found.");
+    record.schoolId = id;
+    record.status = "active";
+    db.schoolVerifications = db.schoolVerifications.filter((item) => item.userId !== user.id);
+    return { error: null, joinCode };
+  });
 }
 
 // -------------------------------------------------------------------- account
@@ -510,14 +600,14 @@ export async function createClub(input: ClubInput): Promise<Result> {
     let sponsorId = user.id;
     if (user.role === "admin" && input.sponsorId) {
       const sponsor = db.users.find((u) => u.id === input.sponsorId);
-      if (!sponsor || !isActiveStaff(sponsor))
+      if (!sponsor || sponsor.schoolId !== user.schoolId || !isActiveStaff(sponsor))
         return fail("Pick an approved sponsor for this club.");
       sponsorId = sponsor.id;
     }
 
     db.clubs.push({
       id: newId("clb"),
-      schoolId: db.school.id,
+      schoolId: user.schoolId!,
       name: input.name.trim(),
       category: input.category,
       visibility: input.visibility,
@@ -577,7 +667,7 @@ export async function updateClub(input: {
     if (patch.sponsorId !== undefined && patch.sponsorId !== club.sponsorId) {
       if (user.role !== "admin") return fail("Only a school admin can reassign a sponsor.");
       const sponsor = db.users.find((u) => u.id === patch.sponsorId);
-      if (!sponsor || !isActiveStaff(sponsor)) return fail("Pick an approved sponsor.");
+      if (!sponsor || sponsor.schoolId !== user.schoolId || !isActiveStaff(sponsor)) return fail("Pick an approved sponsor.");
       club.sponsorId = sponsor.id;
     }
     return ok;
@@ -701,7 +791,7 @@ export async function reviewStaff(input: { userId: string; approve: boolean }): 
 
   return transaction((db) => {
     const target = db.users.find((u) => u.id === input.userId);
-    if (!target) return fail("That account no longer exists.");
+    if (!target || target.schoolId !== user.schoolId) return fail("That account no longer exists.");
     if (target.role === "student") return fail("Students don't need approval.");
 
     target.status = input.approve ? "active" : "denied";
@@ -722,8 +812,12 @@ export async function setSchoolCode(input: { code: string }): Promise<Result> {
   if (code.length < 6) return fail("Codes need at least 6 characters.");
   if (!/^[A-Z0-9-]+$/.test(code)) return fail("Use letters, numbers, and dashes only.");
 
-  await transaction((db) => {
-    db.school.joinCode = code;
+  return transaction((db) => {
+    const school = db.schools.find((candidate) => candidate.id === user.schoolId);
+    if (!school) return fail("School not found.");
+    if (db.schools.some((candidate) => candidate.id !== school.id && norm(candidate.joinCode) === norm(code)))
+      return fail("That campus code is already in use.");
+    school.joinCode = code;
+    return ok;
   });
-  return ok;
 }

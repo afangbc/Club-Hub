@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Building2, KeyRound, LogOut, Settings, UserCog, Users } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
-import { SCHOOL, homeFor, roleLabel } from "@/lib/campus-data";
+import { homeFor, roleLabel } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 const nav = [
@@ -12,7 +12,7 @@ const nav = [
 ] as const;
 
 export function AdminShell({ children }: { children: ReactNode }) {
-  const { session, ready, signOut, pendingStaff } = useSession();
+  const { session, school, ready, signOut, pendingStaff } = useSession();
   const navigate = useNavigate();
   const isAdmin = session?.role === "admin" && session.status === "active";
 
@@ -37,7 +37,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <span className="hidden text-xs uppercase tracking-widest opacity-70 sm:inline">
-            {SCHOOL.name} · {SCHOOL.district}
+            {school?.name} · {school?.district}
           </span>
           <div className="ml-auto mr-12 flex items-center gap-2">
             <div className="hidden text-right sm:block">
