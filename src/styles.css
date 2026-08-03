@@ -116,9 +116,9 @@
   --card-foreground: oklch(0.984 0.003 247.858);
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
-  /* Keep the school blue; only its light lettering flips to near-black. */
+  /* Branded blue panels keep their original blue-and-white treatment. */
   --primary: oklch(0.42 0.175 264);
-  --primary-foreground: oklch(0.15 0.04 264);
+  --primary-foreground: oklch(0.99 0.012 100);
   --secondary: oklch(0.279 0.041 260.031);
   --secondary-foreground: oklch(0.984 0.003 247.858);
   --muted: oklch(0.279 0.041 260.031);
