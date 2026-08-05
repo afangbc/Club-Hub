@@ -10,7 +10,7 @@ export const Route = createFileRoute("/announcements")({
       { title: "Announcements — ClubHub" },
       {
         name: "description",
-        content: "Everything your club sponsors have posted, newest first, in one feed.",
+        content: "Everything your club and team sponsors have posted, newest first, in one feed.",
       },
       { property: "og:title", content: "Announcements — ClubHub" },
       {
@@ -27,12 +27,14 @@ export const Route = createFileRoute("/announcements")({
 });
 
 function AnnouncementsPage() {
-  const { myClubs, clubs, announcements } = useSession();
+  const { myClubs, clubs, teams, announcements } = useSession();
   const [filter, setFilter] = useState("all");
 
-  const feed = announcements.filter(
-    (a) => myClubs.includes(a.clubId) && (filter === "all" || a.clubId === filter),
-  );
+  const feed = announcements.filter((post) => {
+    const target = post.clubId ? `club:${post.clubId}` : `team:${post.teamId}`;
+    const joinedTarget = post.clubId ? myClubs.includes(post.clubId) : !!post.teamId && teams.some((team) => team.id === post.teamId);
+    return joinedTarget && (filter === "all" || target === filter);
+  });
   const joined = clubs.filter((c) => myClubs.includes(c.id));
 
   return (
@@ -42,22 +44,23 @@ function AnnouncementsPage() {
         Posts from the sponsors of the clubs you joined — newest first.
       </p>
 
-      {joined.length > 1 && (
+      {joined.length + teams.length > 1 && (
         <div className="mt-6 flex flex-wrap gap-1.5">
           <Chip active={filter === "all"} onClick={() => setFilter("all")}>
-            All clubs
+            All
           </Chip>
           {joined.map((c) => (
-            <Chip key={c.id} active={filter === c.id} onClick={() => setFilter(c.id)}>
+            <Chip key={c.id} active={filter === `club:${c.id}`} onClick={() => setFilter(`club:${c.id}`)}>
               {c.name}
             </Chip>
           ))}
+          {teams.map((team) => <Chip key={team.id} active={filter === `team:${team.id}`} onClick={() => setFilter(`team:${team.id}`)}>{team.name}</Chip>)}
         </div>
       )}
 
-      {myClubs.length === 0 ? (
+      {myClubs.length === 0 && teams.length === 0 ? (
         <div className="card-surface mt-6 p-10 text-center text-sm text-muted-foreground">
-          Join a club and its announcements land here.{" "}
+          Join a club or team and its announcements land here.{" "}
           <Link to="/clubs" className="font-semibold text-foreground underline">
             Browse the directory
           </Link>
@@ -78,7 +81,7 @@ function AnnouncementsPage() {
                 <div className="flex-1">
                   <h2 className="text-2xl leading-tight">{a.title}</h2>
                   <p className="text-xs text-muted-foreground">
-                    {clubs.find((c) => c.id === a.clubId)?.name} · {a.author} ·{" "}
+                    {(a.clubId ? clubs.find((club) => club.id === a.clubId)?.name : teams.find((team) => team.id === a.teamId)?.name)} · {a.author} ·{" "}
                     {new Date(`${a.postedAt}T12:00:00`).toLocaleDateString(undefined, {
                       month: "long",
                       day: "numeric",

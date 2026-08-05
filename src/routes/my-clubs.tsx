@@ -30,10 +30,10 @@ function MyClubs() {
   const mine = clubs.filter((c) => myClubs.includes(c.id));
   const requested = clubs.filter((c) => pending.includes(c.id));
   const upcoming = events
-    .filter((e) => myClubs.includes(e.clubId) && e.date >= today)
+    .filter((e) => !!e.clubId && myClubs.includes(e.clubId) && e.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 4);
-  const latest = announcements.filter((a) => myClubs.includes(a.clubId)).slice(0, 3);
+  const latest = announcements.filter((a) => !!a.clubId && myClubs.includes(a.clubId)).slice(0, 3);
 
   return (
     <div>

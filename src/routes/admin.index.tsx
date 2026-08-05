@@ -33,6 +33,7 @@ function AdminHome() {
     session,
     school,
     clubs,
+    teams,
     events,
     announcements,
     staff,
@@ -85,7 +86,7 @@ function AdminHome() {
           value={staff.filter((s) => s.status === "active").length}
         />
         <Stat icon={Users} label="Staff awaiting review" value={pendingStaff.length} />
-        <Stat icon={CalendarDays} label="Meetings scheduled" value={events.length} />
+        <Stat icon={CalendarDays} label="Meetings / events" value={events.length} />
       </div>
 
       <section className="card-surface mt-6 p-5">
@@ -182,7 +183,7 @@ function AdminHome() {
               </span>
               <span className="font-semibold">{a.title}</span>
               <span className="text-xs text-muted-foreground">
-                {clubs.find((c) => c.id === a.clubId)?.name} · {a.author}
+                {(a.clubId ? clubs.find((club) => club.id === a.clubId)?.name : teams.find((team) => team.id === a.teamId)?.name)} · {a.author}
               </span>
             </li>
           ))}

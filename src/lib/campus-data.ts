@@ -174,7 +174,8 @@ export type Team = {
 
 export type ClubEvent = {
   id: string;
-  clubId: string;
+  clubId?: string;
+  teamId?: string;
   title: string;
   date: string; // ISO yyyy-mm-dd
   /** 24-hour "HH:MM" — run it through `formatTime` before showing it. */
@@ -185,7 +186,8 @@ export type ClubEvent = {
 
 export type Announcement = {
   id: string;
-  clubId: string;
+  clubId?: string;
+  teamId?: string;
   title: string;
   body: string;
   author: string;

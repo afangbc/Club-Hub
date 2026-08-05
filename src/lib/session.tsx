@@ -109,7 +109,7 @@ type State = {
   deleteClub: Action<[string]>;
   addEvent: Action<[Omit<ClubEvent, "id">]>;
   removeEvent: Action<[string]>;
-  addAnnouncement: Action<[{ clubId: string; title: string; body: string }]>;
+  addAnnouncement: Action<[{ clubId?: string; teamId?: string; title: string; body: string }]>;
   removeAnnouncement: Action<[string]>;
   resolveRequest: Action<[string, boolean]>;
   reviewStaff: Action<[string, boolean]>;

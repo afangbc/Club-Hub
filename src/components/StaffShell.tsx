@@ -15,7 +15,7 @@ import { useSession } from "@/lib/session";
 const nav = [
   { to: "/manage", label: "My Clubs", icon: LayoutDashboard },
   { to: "/manage/teams", label: "Teams", icon: Trophy },
-  { to: "/manage/events", label: "Meetings", icon: CalendarPlus },
+  { to: "/manage/events", label: "Meetings / Events", icon: CalendarPlus },
   { to: "/manage/announcements", label: "Announcements", icon: Megaphone },
   { to: "/manage/requests", label: "Requests", icon: UserCheck },
 ] as const;

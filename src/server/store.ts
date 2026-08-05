@@ -103,8 +103,8 @@ async function migrate(parsed: LegacyDatabase): Promise<Database> {
   const athleticIds = new Set(athleticClubs.map((club) => club.id));
   next.clubs = next.clubs.filter((club) => !athleticIds.has(club.id));
   next.memberships = next.memberships.filter((item) => !athleticIds.has(item.clubId));
-  next.events = next.events.filter((event) => !athleticIds.has(event.clubId));
-  next.announcements = next.announcements.filter((announcement) => !athleticIds.has(announcement.clubId));
+  next.events = next.events.filter((event) => !event.clubId || !athleticIds.has(event.clubId));
+  next.announcements = next.announcements.filter((announcement) => !announcement.clubId || !athleticIds.has(announcement.clubId));
   delete next.schoolVerifications;
   next.version = DB_VERSION;
   return next as Database;

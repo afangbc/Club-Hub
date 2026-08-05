@@ -24,7 +24,7 @@ export const Route = createFileRoute("/")({
 
 const roles: { value: Role; label: string; hint: string }[] = [
   { value: "student", label: "Student", hint: "Join clubs & see your calendar" },
-  { value: "teacher", label: "Teacher", hint: "Sponsor clubs & post meetings" },
+  { value: "teacher", label: "Teacher", hint: "Sponsor clubs and teams" },
   { value: "admin", label: "School Admin", hint: "Request the campus from ClubHub" },
 ];
 
@@ -88,7 +88,7 @@ function Index() {
           <ul className="mt-8 space-y-3 text-sm opacity-90">
             {[
               "Students join clubs and get every meeting on one calendar",
-              "Teachers create clubs, post meetings, and send announcements",
+              "Teachers manage clubs and teams, post events, and send announcements",
               "Admins issue the campus code, build clubs, and approve staff",
             ].map((f) => (
               <li key={f} className="flex gap-3">

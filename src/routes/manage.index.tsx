@@ -24,15 +24,16 @@ export const Route = createFileRoute("/manage/")({
 });
 
 function Dashboard() {
-  const { session, clubs, events, requests, announcements, createClub } = useSession();
+  const { session, clubs, teams, events, requests, announcements, createClub } = useSession();
   const [creating, setCreating] = useState(false);
   if (!session) return null;
 
   const mine = staffClubs(clubs, session);
   const ids = mine.map((c) => c.id);
   const myRequests = requests.filter((r) => ids.includes(r.clubId));
-  const myEvents = events.filter((e) => ids.includes(e.clubId));
-  const myPosts = announcements.filter((a) => ids.includes(a.clubId));
+  const teamIds = teams.map((team) => team.id);
+  const myEvents = events.filter((event) => event.clubId ? ids.includes(event.clubId) : !!event.teamId && teamIds.includes(event.teamId));
+  const myPosts = announcements.filter((post) => post.clubId ? ids.includes(post.clubId) : !!post.teamId && teamIds.includes(post.teamId));
 
   return (
     <div>
@@ -73,7 +74,7 @@ function Dashboard() {
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={Users} label="Clubs sponsored" value={mine.length} />
         <Stat icon={Users} label="Pending requests" value={myRequests.length} />
-        <Stat icon={CalendarDays} label="Scheduled meetings" value={myEvents.length} />
+        <Stat icon={CalendarDays} label="Meetings / events" value={myEvents.length} />
         <Stat icon={Megaphone} label="Announcements posted" value={myPosts.length} />
       </div>
 
@@ -82,7 +83,7 @@ function Dashboard() {
           to="/manage/events"
           className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-accent"
         >
-          Post a meeting
+          Post a meeting / event
         </Link>
         <Link
           to="/manage/announcements"

@@ -268,7 +268,8 @@ export const deleteClubFn = createServerFn({ method: "POST" })
 export const createEventFn = createServerFn({ method: "POST" })
   .inputValidator(
     (d: {
-      clubId: string;
+      clubId?: string;
+      teamId?: string;
       title: string;
       date: string;
       start: string;
@@ -278,6 +279,7 @@ export const createEventFn = createServerFn({ method: "POST" })
       const raw = (d ?? {}) as Partial<typeof d>;
       return {
         clubId: str(raw.clubId, 60),
+        teamId: str(raw.teamId, 60),
         title: str(raw.title, 120),
         date: str(raw.date, 10),
         start: str(raw.start, 20),
@@ -299,9 +301,9 @@ export const deleteEventFn = createServerFn({ method: "POST" })
   });
 
 export const createAnnouncementFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { clubId: string; title: string; body: string }) => {
+  .inputValidator((d: { clubId?: string; teamId?: string; title: string; body: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
-    return { clubId: str(raw.clubId, 60), title: str(raw.title, 120), body: str(raw.body, 2000) };
+    return { clubId: str(raw.clubId, 60), teamId: str(raw.teamId, 60), title: str(raw.title, 120), body: str(raw.body, 2000) };
   })
   .handler(async ({ data }): Promise<Result> => {
     const { createAnnouncement } = await import("@/server/service");

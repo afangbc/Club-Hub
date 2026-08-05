@@ -170,6 +170,11 @@ function canManage(user: UserRecord, club: ClubRecord): boolean {
   return user.role === "admin" || club.sponsorId === user.id;
 }
 
+function canManageTeam(user: UserRecord, team: TeamRecord): boolean {
+  if (!isActiveStaff(user) || user.schoolId !== team.schoolId) return false;
+  return user.role === "admin" || team.sponsorId === user.id;
+}
+
 /** Every mutation below starts here, so an unapproved account can never write. */
 async function requireEnrolled(): Promise<
   { user: UserRecord; error: null } | { user: null; error: string }
@@ -276,6 +281,7 @@ export async function loadState(): Promise<AppState> {
   const visibleTeams = schoolTeams.filter((team) =>
     user.role === "admin" ? true : user.role === "teacher" ? team.sponsorId === user.id : joinedTeamIds.has(team.id),
   );
+  const visibleTeamIds = new Set(visibleTeams.map((team) => team.id));
   const mine = db.memberships.filter((m) => m.userId === user.id);
   const myClubIds = mine.filter((m) => m.status === "member").map((m) => m.clubId);
 
@@ -283,8 +289,9 @@ export async function loadState(): Promise<AppState> {
   const manageableIds = new Set(manageable.map((c) => c.id));
 
   const visibleAnnouncements = db.announcements.filter((a) => {
+    if (a.teamId) return visibleTeamIds.has(a.teamId);
     if (user.role === "admin") return true;
-    return myClubIds.includes(a.clubId) || manageableIds.has(a.clubId);
+    return !!a.clubId && (myClubIds.includes(a.clubId) || manageableIds.has(a.clubId));
   });
 
   const requests: JoinRequest[] = db.memberships
@@ -341,11 +348,14 @@ export async function loadState(): Promise<AppState> {
     },
     clubs: clubs.map((c) => toClub(db, c)),
     teams: visibleTeams.map((team) => toTeam(db, team, user)),
-    events: db.events.filter((e) => clubs.some((c) => c.id === e.clubId)),
+    events: db.events.filter((event) =>
+      event.teamId ? visibleTeamIds.has(event.teamId) : clubs.some((club) => club.id === event.clubId),
+    ),
     announcements: visibleAnnouncements
       .map((a) => ({
         id: a.id,
-        clubId: a.clubId,
+        ...(a.clubId ? { clubId: a.clubId } : {}),
+        ...(a.teamId ? { teamId: a.teamId } : {}),
         title: a.title,
         body: a.body,
         author: db.users.find((u) => u.id === a.authorId)?.name ?? "Sponsor",
@@ -1072,7 +1082,8 @@ export async function deleteClub(input: { id: string }): Promise<Result> {
 // -------------------------------------------------------- meetings & bulletins
 
 export async function createEvent(input: {
-  clubId: string;
+  clubId?: string;
+  teamId?: string;
   title: string;
   date: string;
   start: string;
@@ -1083,7 +1094,7 @@ export async function createEvent(input: {
   if (!user) return fail(error);
 
   if (!input.title.trim() || !input.location.trim())
-    return fail("Pick a club and fill in title, date, and location.");
+    return fail("Pick a club or team and fill in title, date, and location.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return fail("Pick a valid date.");
 
   const clock = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -1092,13 +1103,16 @@ export async function createEvent(input: {
   if (end <= start) return fail("The meeting has to end after it starts.");
 
   return transaction((db) => {
-    const club = db.clubs.find((c) => c.id === input.clubId);
-    if (!club) return fail("Pick a club.");
-    if (!canManage(user, club)) return fail("You don't sponsor that club.");
+    const club = input.clubId ? db.clubs.find((candidate) => candidate.id === input.clubId) : undefined;
+    const team = input.teamId ? db.teams.find((candidate) => candidate.id === input.teamId) : undefined;
+    if ((!club && !team) || (club && team)) return fail("Pick one club or team.");
+    if (club && !canManage(user, club)) return fail("You don't sponsor that club.");
+    if (team && !canManageTeam(user, team)) return fail("You don't sponsor that team.");
 
     db.events.push({
       id: newId("evt"),
-      clubId: club.id,
+      ...(club ? { clubId: club.id } : {}),
+      ...(team ? { teamId: team.id } : {}),
       title: input.title.trim(),
       date: input.date,
       start,
@@ -1116,31 +1130,37 @@ export async function deleteEvent(input: { id: string }): Promise<Result> {
   return transaction((db) => {
     const event = db.events.find((e) => e.id === input.id);
     if (!event) return ok;
-    const club = db.clubs.find((c) => c.id === event.clubId);
-    if (!club || !canManage(user, club)) return fail("You don't sponsor that club.");
+    const club = event.clubId ? db.clubs.find((candidate) => candidate.id === event.clubId) : undefined;
+    const team = event.teamId ? db.teams.find((candidate) => candidate.id === event.teamId) : undefined;
+    if (club ? !canManage(user, club) : team ? !canManageTeam(user, team) : true)
+      return fail("You don't manage that club or team.");
     db.events = db.events.filter((e) => e.id !== event.id);
     return ok;
   });
 }
 
 export async function createAnnouncement(input: {
-  clubId: string;
+  clubId?: string;
+  teamId?: string;
   title: string;
   body: string;
 }): Promise<Result> {
   const { user, error } = await requireEnrolled();
   if (!user) return fail(error);
   if (!input.title.trim() || !input.body.trim())
-    return fail("Pick a club, then add a headline and a message.");
+    return fail("Pick a club or team, then add a headline and a message.");
 
   return transaction((db) => {
-    const club = db.clubs.find((c) => c.id === input.clubId);
-    if (!club) return fail("Pick a club.");
-    if (!canManage(user, club)) return fail("You don't sponsor that club.");
+    const club = input.clubId ? db.clubs.find((candidate) => candidate.id === input.clubId) : undefined;
+    const team = input.teamId ? db.teams.find((candidate) => candidate.id === input.teamId) : undefined;
+    if ((!club && !team) || (club && team)) return fail("Pick one club or team.");
+    if (club && !canManage(user, club)) return fail("You don't sponsor that club.");
+    if (team && !canManageTeam(user, team)) return fail("You don't sponsor that team.");
 
     db.announcements.push({
       id: newId("ann"),
-      clubId: club.id,
+      ...(club ? { clubId: club.id } : {}),
+      ...(team ? { teamId: team.id } : {}),
       title: input.title.trim().slice(0, 120),
       body: input.body.trim().slice(0, 2000),
       authorId: user.id,
@@ -1157,8 +1177,10 @@ export async function deleteAnnouncement(input: { id: string }): Promise<Result>
   return transaction((db) => {
     const post = db.announcements.find((a) => a.id === input.id);
     if (!post) return ok;
-    const club = db.clubs.find((c) => c.id === post.clubId);
-    if (!club || !canManage(user, club)) return fail("You don't sponsor that club.");
+    const club = post.clubId ? db.clubs.find((candidate) => candidate.id === post.clubId) : undefined;
+    const team = post.teamId ? db.teams.find((candidate) => candidate.id === post.teamId) : undefined;
+    if (club ? !canManage(user, club) : team ? !canManageTeam(user, team) : true)
+      return fail("You don't manage that club or team.");
     db.announcements = db.announcements.filter((a) => a.id !== post.id);
     return ok;
   });

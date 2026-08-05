@@ -9,16 +9,16 @@ import { campusRooms, staffClubs } from "@/lib/staff";
 export const Route = createFileRoute("/manage/events")({
   head: () => ({
     meta: [
-      { title: "Meetings — ClubHub Staff" },
+      { title: "Meetings / Events — ClubHub Staff" },
       {
         name: "description",
         content:
-          "Post, edit, and cancel meetings for the clubs you sponsor. Members see them on their calendar instantly.",
+          "Post and cancel meetings or events for the clubs and teams you sponsor. Members see them instantly.",
       },
-      { property: "og:title", content: "Meetings — ClubHub Staff" },
+      { property: "og:title", content: "Meetings / Events — ClubHub Staff" },
       {
         property: "og:description",
-        content: "Schedule club meetings straight to student calendars.",
+        content: "Schedule club and team events straight to student calendars.",
       },
     ],
   }),
@@ -26,9 +26,14 @@ export const Route = createFileRoute("/manage/events")({
 });
 
 function Meetings() {
-  const { session, clubs, events, addEvent, removeEvent } = useSession();
+  const { session, clubs, teams, events, addEvent, removeEvent } = useSession();
   const mine = session ? staffClubs(clubs, session) : [];
   const ids = mine.map((c) => c.id);
+  const teamIds = teams.map((team) => team.id);
+  const targets = [
+    ...mine.map((club) => ({ value: `club:${club.id}`, label: `Club · ${club.name}` })),
+    ...teams.map((team) => ({ value: `team:${team.id}`, label: `Team · ${team.name}` })),
+  ];
   const [picked, setPicked] = useState("");
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
@@ -40,17 +45,18 @@ function Meetings() {
   const [busy, setBusy] = useState(false);
 
   if (!session) return null;
-  const clubId = ids.includes(picked) ? picked : (mine[0]?.id ?? "");
+  const target = targets.some((item) => item.value === picked) ? picked : (targets[0]?.value ?? "");
+  const [kind, targetId] = target.split(":");
   const list = events
-    .filter((e) => ids.includes(e.clubId))
+    .filter((event) => (event.clubId ? ids.includes(event.clubId) : !!event.teamId && teamIds.includes(event.teamId)))
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  if (mine.length === 0) return <NoClubs />;
+  if (targets.length === 0) return <NoClubs />;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
       <section className="card-surface h-fit p-5">
-        <h1 className="text-3xl leading-tight">Post a meeting</h1>
+        <h1 className="text-3xl leading-tight">Post a meeting / event</h1>
         <p className="mt-1 text-xs text-muted-foreground">
           It lands on every member's calendar right away.
         </p>
@@ -59,15 +65,15 @@ function Meetings() {
           onSubmit={async (e) => {
             e.preventDefault();
             if (busy) return;
-            if (!clubId || !title.trim() || !date || !location.trim()) {
+            if (!targetId || !title.trim() || !date || !location.trim()) {
               setOk("");
-              setError("Pick a club and fill in title, date, and location.");
+              setError("Pick a club or team and fill in title, date, and location.");
               return;
             }
             setBusy(true);
             const posted = title.trim();
             const problem = await addEvent({
-              clubId,
+              ...(kind === "club" ? { clubId: targetId } : { teamId: targetId }),
               title: posted,
               date,
               start,
@@ -84,10 +90,10 @@ function Meetings() {
           }}
         >
           <SelectField
-            label="Club"
-            value={clubId}
+            label="Club or team"
+            value={target}
             onChange={setPicked}
-            options={mine.map((c) => ({ value: c.id, label: c.name }))}
+            options={targets}
           />
           <TextField
             label="Title"
@@ -117,13 +123,13 @@ function Meetings() {
             disabled={busy}
             className="w-full rounded-md bg-primary py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
           >
-            {busy ? "Posting…" : "Post meeting"}
+            {busy ? "Posting…" : "Post meeting / event"}
           </button>
         </form>
       </section>
 
       <section>
-        <h2 className="text-2xl">Scheduled meetings</h2>
+        <h2 className="text-2xl">Scheduled meetings / events</h2>
         <ul className="mt-3 space-y-2">
           {list.map((e) => (
             <li key={e.id} className="card-surface flex items-center gap-4 p-3">
@@ -137,7 +143,7 @@ function Meetings() {
               <div className="flex-1">
                 <p className="text-sm font-semibold">{e.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {clubs.find((c) => c.id === e.clubId)?.name} · {formatTime(e.start)}–
+                  {(e.clubId ? clubs.find((club) => club.id === e.clubId)?.name : teams.find((team) => team.id === e.teamId)?.name)} · {formatTime(e.start)}–
                   {formatTime(e.end)} · {e.location}
                 </p>
               </div>
@@ -164,9 +170,9 @@ function Meetings() {
 function NoClubs() {
   return (
     <div className="card-surface mx-auto max-w-lg p-10 text-center">
-      <h1 className="text-3xl">No clubs to schedule</h1>
+      <h1 className="text-3xl">Nothing to schedule yet</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Meetings belong to a club, and you don't sponsor one yet.
+        Meetings and events belong to a club or team, and you don't sponsor either yet.
       </p>
       <Link
         to="/manage"

@@ -27,13 +27,13 @@ export const Route = createFileRoute("/calendar")({
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function CalendarPage() {
-  const { myClubs, clubs, events: allEvents } = useSession();
+  const { myClubs, clubs, teams, events: allEvents } = useSession();
   const today = new Date();
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
 
   const events = useMemo(
-    () => allEvents.filter((e) => myClubs.includes(e.clubId)),
-    [myClubs, allEvents],
+    () => allEvents.filter((event) => event.clubId ? myClubs.includes(event.clubId) : !!event.teamId && teams.some((team) => team.id === event.teamId)),
+    [myClubs, teams, allEvents],
   );
 
   const cells = useMemo(() => {
@@ -59,7 +59,7 @@ function CalendarPage() {
         <div>
           <h1 className="text-4xl">Calendar</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Meetings from your clubs only — nothing you didn't join.
+            Meetings and events from your clubs and teams — nothing you didn't join.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -83,9 +83,9 @@ function CalendarPage() {
         </div>
       </div>
 
-      {myClubs.length === 0 && (
+      {myClubs.length === 0 && teams.length === 0 && (
         <div className="card-surface mt-6 p-8 text-center text-sm text-muted-foreground">
-          Your calendar fills in as you join clubs.{" "}
+          Your calendar fills in as you join clubs and teams.{" "}
           <Link to="/clubs" className="font-semibold text-foreground underline">
             Browse the directory
           </Link>
@@ -161,7 +161,7 @@ function CalendarPage() {
                   </span>
                   <span className="font-semibold">{e.title}</span>
                   <span className="text-xs text-muted-foreground">
-                    {clubs.find((c) => c.id === e.clubId)?.name} · {e.location}
+                    {(e.clubId ? clubs.find((club) => club.id === e.clubId)?.name : teams.find((team) => team.id === e.teamId)?.name)} · {e.location}
                   </span>
                   <span className="ml-auto text-xs">
                     {formatTime(e.start)} – {formatTime(e.end)}

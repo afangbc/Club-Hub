@@ -22,9 +22,14 @@ export const Route = createFileRoute("/manage/announcements")({
 });
 
 function Announcements() {
-  const { session, clubs, announcements, addAnnouncement, removeAnnouncement } = useSession();
+  const { session, clubs, teams, announcements, addAnnouncement, removeAnnouncement } = useSession();
   const mine = session ? staffClubs(clubs, session) : [];
   const ids = mine.map((c) => c.id);
+  const teamIds = teams.map((team) => team.id);
+  const targets = [
+    ...mine.map((club) => ({ value: `club:${club.id}`, label: `Club · ${club.name}` })),
+    ...teams.map((team) => ({ value: `team:${team.id}`, label: `Team · ${team.name}` })),
+  ];
   const [picked, setPicked] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -33,33 +38,35 @@ function Announcements() {
   const [busy, setBusy] = useState(false);
 
   if (!session) return null;
-  const clubId = ids.includes(picked) ? picked : (mine[0]?.id ?? "");
-  const posted = announcements.filter((a) => ids.includes(a.clubId));
+  const target = targets.some((item) => item.value === picked) ? picked : (targets[0]?.value ?? "");
+  const [kind, targetId] = target.split(":");
+  const posted = announcements.filter((post) => post.clubId ? ids.includes(post.clubId) : !!post.teamId && teamIds.includes(post.teamId));
 
-  if (mine.length === 0) return <NoClubs />;
+  if (targets.length === 0) return <NoClubs />;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
       <section className="card-surface h-fit p-5">
         <h1 className="text-3xl leading-tight">Post an announcement</h1>
         <p className="mt-1 text-xs text-muted-foreground">
-          Every member of that club sees it on their announcements tab.
+          Every member of that club or team sees it on their announcements tab.
         </p>
         <form
           className="mt-4 space-y-3"
           onSubmit={async (e) => {
             e.preventDefault();
             if (busy) return;
-            if (!clubId || !title.trim() || !body.trim()) {
+            if (!targetId || !title.trim() || !body.trim()) {
               setOk("");
-              setError("Pick a club, then add a headline and a message.");
+              setError("Pick a club or team, then add a headline and a message.");
               return;
             }
             setBusy(true);
-            const problem = await addAnnouncement({ clubId, title, body });
+            const problem = await addAnnouncement({ ...(kind === "club" ? { clubId: targetId } : { teamId: targetId }), title, body });
             setBusy(false);
             setError(problem ?? "");
-            setOk(problem ? "" : `Sent to ${clubs.find((c) => c.id === clubId)?.name}.`);
+            const targetName = kind === "club" ? clubs.find((club) => club.id === targetId)?.name : teams.find((team) => team.id === targetId)?.name;
+            setOk(problem ? "" : `Sent to ${targetName}.`);
             if (!problem) {
               setTitle("");
               setBody("");
@@ -67,10 +74,10 @@ function Announcements() {
           }}
         >
           <SelectField
-            label="Club"
-            value={clubId}
+            label="Club or team"
+            value={target}
             onChange={setPicked}
-            options={mine.map((c) => ({ value: c.id, label: c.name }))}
+            options={targets}
           />
           <TextField
             label="Headline"
@@ -105,7 +112,7 @@ function Announcements() {
               <div className="flex-1">
                 <p className="text-sm font-semibold">{a.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {clubs.find((c) => c.id === a.clubId)?.name} ·{" "}
+                  {(a.clubId ? clubs.find((club) => club.id === a.clubId)?.name : teams.find((team) => team.id === a.teamId)?.name)} ·{" "}
                   {new Date(`${a.postedAt}T12:00:00`).toLocaleDateString(undefined, {
                     month: "short",
                     day: "numeric",
@@ -137,9 +144,9 @@ function Announcements() {
 function NoClubs() {
   return (
     <div className="card-surface mx-auto max-w-lg p-10 text-center">
-      <h1 className="text-3xl">No clubs to announce to</h1>
+      <h1 className="text-3xl">Nobody to announce to yet</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Announcements go out to a club's members, and you don't sponsor a club yet.
+        Announcements go to club or team members, and you don't sponsor either yet.
       </p>
       <Link
         to="/manage"
