@@ -38,7 +38,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-secondary">
-      <header className="sticky top-0 z-30 border-b border-border bg-foreground text-background">
+      <header className="sticky top-0 z-30 border-b border-border bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
           <Link to="/manage" className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-md bg-brand font-display text-lg text-brand-foreground">
@@ -58,14 +58,14 @@ export function StaffShell({ children }: { children: ReactNode }) {
             </div>
             <Link
               to="/clubs"
-              className="rounded-md border border-background/25 px-3 py-1.5 text-xs font-semibold hover:bg-background/10"
+              className="rounded-md border border-primary-foreground/25 px-3 py-1.5 text-xs font-semibold hover:bg-primary-foreground/10"
             >
               Student view
             </Link>
             <Link
               to="/account"
               aria-label="Account settings"
-              className="rounded-md p-2 hover:bg-background/10"
+              className="rounded-md p-2 hover:bg-primary-foreground/10"
             >
               <Settings className="size-4" />
             </Link>
@@ -75,7 +75,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
                 navigate({ to: "/", replace: true });
               }}
               aria-label="Sign out"
-              className="rounded-md p-2 hover:bg-background/10"
+              className="rounded-md p-2 hover:bg-primary-foreground/10"
             >
               <LogOut className="size-4" />
             </button>
