@@ -22,8 +22,11 @@ type LegacyDatabase = Database & {
  * except the school-verification queue, which backed the self-serve school
  * creation that owners now do themselves.
  */
-function migrate(parsed: LegacyDatabase): Database {
+async function migrate(parsed: LegacyDatabase): Promise<Database> {
   const next = parsed as LegacyDatabase;
+
+  if (next.version === 4 && (next.users?.length ?? 0) === 0 && (next.clubs?.length ?? 0) === 0)
+    return buildSeedDatabase();
 
   if (next.version === 1 && next.school) {
     next.schools = [next.school];
@@ -71,7 +74,7 @@ async function load(): Promise<Database> {
       const parsed = JSON.parse(raw) as LegacyDatabase;
       if (parsed.version === DB_VERSION) return parsed;
       if (parsed.version >= 1 && parsed.version < DB_VERSION) {
-        const migrated = migrate(parsed);
+        const migrated = await migrate(parsed);
         await driver.write(JSON.stringify(migrated, null, 2));
         console.info(`[clubhub] Migrated database to version ${DB_VERSION}.`);
         return migrated;
@@ -84,7 +87,7 @@ async function load(): Promise<Database> {
     }
   }
 
-  const seeded = buildSeedDatabase();
+  const seeded = await buildSeedDatabase();
   await driver.write(JSON.stringify(seeded, null, 2));
   console.info(`[clubhub] Seeded a new database via ${driver.kind}.`);
   return seeded;

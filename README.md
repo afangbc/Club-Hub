@@ -215,7 +215,17 @@ The storage layer is implemented in:
 src/server/storage.ts
 ```
 
-Deleting the local JSON file completely resets the application.
+Delete `.data/clubhub.json` to reset to the populated Frisco High School demo.
+The seeded accounts below all use the password `raccoons26`:
+
+| Role | Email |
+| --- | --- |
+| Student | `jordan.rivera.123@k12.friscoisd.org` |
+| Teacher | `marcus.alvarez@friscoisd.org` |
+| School admin | `alicia.nguyen@friscoisd.org` |
+
+Upgrading an empty version-4 database restores this demo automatically. A
+database containing real users or clubs is never replaced with sample data.
 
 ---
 
