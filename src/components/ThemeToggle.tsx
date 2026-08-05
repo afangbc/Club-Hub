@@ -44,8 +44,10 @@ export function ThemeToggle() {
       title={dark ? "Switch to light mode" : "Switch to dark mode"}
       className="group fixed right-3 top-3 z-[100] h-10 w-20 rounded-full border border-border/70 bg-card/90 p-1 text-card-foreground shadow-lg shadow-foreground/10 backdrop-blur-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <span className="relative z-10 grid h-full grid-cols-2 place-items-center" aria-hidden="true">
+      <span className="absolute left-1 top-1 z-10 grid size-8 place-items-center" aria-hidden="true">
         <Sun className={`size-4 transition-colors duration-300 ${dark ? "text-muted-foreground" : "text-primary-foreground"}`} />
+      </span>
+      <span className="absolute right-1 top-1 z-10 grid size-8 place-items-center" aria-hidden="true">
         <Moon className={`size-4 transition-colors duration-300 ${dark ? "text-primary-foreground" : "text-muted-foreground"}`} />
       </span>
       <span
