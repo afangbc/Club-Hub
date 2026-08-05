@@ -262,8 +262,7 @@ body::-webkit-scrollbar {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: 0 1px 2px oklch(0.21 0.055 264 / 0.07);
-  animation: card-flow-up 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: transform, opacity;
+  animation: card-flow-up 460ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Keep translated entrance frames inside the page so they never grow its scroll area. */
