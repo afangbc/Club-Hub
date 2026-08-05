@@ -115,6 +115,11 @@ body {
   -ms-overflow-style: none;
 }
 
+html {
+  /* Match the denser feel of viewing the original interface at 90% browser zoom. */
+  font-size: 90%;
+}
+
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   width: 0;
