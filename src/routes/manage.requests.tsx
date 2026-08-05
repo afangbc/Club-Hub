@@ -54,7 +54,7 @@ function Requests() {
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
       {list.length === 0 ? (
-        <p className="card-surface mt-6 p-6 text-center text-sm text-muted-foreground">
+        <p className="request-empty-in card-surface mt-6 p-6 text-center text-sm text-muted-foreground">
           No requests waiting. You're all caught up.
         </p>
       ) : (
