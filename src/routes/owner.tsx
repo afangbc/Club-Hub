@@ -64,8 +64,8 @@ function OwnerConsole() {
       <main className="mx-auto max-w-5xl px-4 py-8">
         <h1 className="text-4xl">Owner console</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Nobody becomes a school admin without you. Approving a request hands that account the
-          campus: its access code, its club list, and every staff account on it.
+          Nobody gets a school without an owner review. Approving an application creates a separate
+          campus, generates its student code, and assigns only its applicant as admin.
         </p>
         {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
@@ -150,7 +150,7 @@ function RequestCard({
         <div className="min-w-52 flex-1">
           <p className="text-lg font-semibold leading-tight">{request.name}</p>
           <p className="text-xs text-muted-foreground">
-            {request.email} · wants {request.schoolName} ·{" "}
+            {request.email} · new school: {request.schoolName} · {request.district} ·{" "}
             {new Date(request.createdAt).toLocaleDateString(undefined, {
               month: "short",
               day: "numeric",
@@ -163,7 +163,7 @@ function RequestCard({
             onClick={() => void decide(true)}
             className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
           >
-            <Check className="size-4" /> Make admin
+            <Check className="size-4" /> Approve school
           </button>
           <button
             disabled={busy}
@@ -177,6 +177,11 @@ function RequestCard({
       <p className="mt-3 whitespace-pre-wrap rounded-md bg-secondary px-3 py-2 text-sm">
         {request.message}
       </p>
+      <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+        <span>Mascot: {request.mascot}</span>
+        <span className="size-5 rounded-full border border-border" style={{ backgroundColor: request.primaryColor }} />
+        <span className="size-5 rounded-full border border-border" style={{ backgroundColor: request.secondaryColor }} />
+      </div>
     </li>
   );
 }
@@ -223,6 +228,8 @@ function NewSchool() {
   const [name, setName] = useState("");
   const [district, setDistrict] = useState("");
   const [mascot, setMascot] = useState("");
+  const [primaryColor] = useState("#1d4ed8");
+  const [secondaryColor] = useState("#facc15");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -256,7 +263,7 @@ function NewSchool() {
           e.preventDefault();
           if (busy) return;
           setBusy(true);
-          const result = await createSchool({ name, district, mascot });
+          const result = await createSchool({ name, district, mascot, primaryColor, secondaryColor });
           setBusy(false);
           setError(result.error ?? "");
           if (!result.error) {

@@ -364,11 +364,20 @@ CLUBHUB_OWNER_EMAILS
 
 4. Visit the Owner Console.
 
-5. Create a school (or use the default Frisco High School).
+5. A prospective school admin submits a new-school application with the school
+   name, district, mascot, colors, and verification details.
 
-6. Share the generated campus code with students and staff.
+6. Approve the application from the Owner Console. Approval creates a separate
+   campus and unique join code; applicants can never claim an existing campus.
 
-7. Approve school administrators from the Owner Console.
+7. The approved admin shares the code with students and staff, approves teacher
+   accounts, and manages only their own campus.
+
+To add multiple ClubHub approvers, separate their addresses with commas:
+
+```env
+CLUBHUB_OWNER_EMAILS=owner1@district.org,owner2@district.org
+```
 
 ---
 

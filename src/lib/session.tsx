@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 import {
   changePasswordFn,
   createAnnouncementFn,
@@ -90,7 +90,7 @@ type State = {
   ownersConfigured: boolean;
   refresh: () => Promise<void>;
   signIn: Action<[string, string]>;
-  signUp: Action<[{ name: string; email: string; role: Role; grade: string; password: string }]>;
+  signUp: Action<[{ name: string; email: string; role: Role; grade: string; password: string; schoolCode: string }]>;
   signOut: Action<[]>;
   verifyEmail: Action<[string]>;
   resendVerification: Action<[]>;
@@ -114,13 +114,17 @@ type State = {
   resolveRequest: Action<[string, boolean]>;
   reviewStaff: Action<[string, boolean]>;
   updateSchoolCode: Action<[string]>;
-  requestAdmin: Action<[{ schoolId: string; message: string }]>;
+  requestAdmin: Action<[{
+    name: string; district: string; mascot: string; primaryColor: string; secondaryColor: string; message: string;
+  }]>;
   reviewAdminRequest: Action<[string, boolean]>;
   revokeAdmin: Action<[string]>;
   createSchool: (input: {
     name: string;
     district: string;
     mascot: string;
+    primaryColor: string;
+    secondaryColor: string;
   }) => Promise<{ error: string | null; joinCode?: string | undefined }>;
 };
 
@@ -176,6 +180,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   });
 
   const state = data ?? emptyState;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const school = state.school;
+    if (!school) {
+      ["--primary", "--primary-foreground", "--brand", "--brand-foreground"].forEach((key) => root.style.removeProperty(key));
+      return;
+    }
+    const foreground = (hex: string) => {
+      const rgb = [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16));
+      return (rgb[0]! * 299 + rgb[1]! * 587 + rgb[2]! * 114) / 1000 > 150 ? "#111827" : "#ffffff";
+    };
+    root.style.setProperty("--primary", school.primaryColor);
+    root.style.setProperty("--primary-foreground", foreground(school.primaryColor));
+    root.style.setProperty("--brand", school.secondaryColor);
+    root.style.setProperty("--brand-foreground", foreground(school.secondaryColor));
+  }, [state.school]);
 
   const value = useMemo<State>(() => {
     const refresh = async () => {

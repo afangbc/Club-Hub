@@ -11,7 +11,7 @@ import {
 } from "@/lib/campus-data";
 import { hashPassword } from "./crypto";
 
-export const DB_VERSION = 6;
+export const DB_VERSION = 7;
 
 export type SchoolRecord = {
   id: string;
@@ -19,6 +19,8 @@ export type SchoolRecord = {
   mascot: string;
   district: string;
   joinCode: string;
+  primaryColor: string;
+  secondaryColor: string;
 };
 
 export type UserRecord = {
@@ -122,11 +124,16 @@ export type EmailVerificationRecord = {
   attempts: number;
 };
 
-/** An account asking a ClubHub owner to make it the admin of a campus. */
+/** An account asking a ClubHub owner to approve a brand-new campus. */
 export type AdminRequestRecord = {
   id: string;
   userId: string;
-  schoolId: string;
+  schoolId?: string;
+  schoolName: string;
+  district: string;
+  mascot: string;
+  primaryColor: string;
+  secondaryColor: string;
   message: string;
   status: AdminRequestStatus;
   createdAt: string;
@@ -177,6 +184,8 @@ export async function buildSeedDatabase(): Promise<Database> {
         mascot: SCHOOL.mascot,
         district: SCHOOL.district,
         joinCode: SCHOOL.defaultJoinCode,
+        primaryColor: "#1d4ed8",
+        secondaryColor: "#facc15",
       },
     ],
     users: [

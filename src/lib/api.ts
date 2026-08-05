@@ -25,7 +25,7 @@ export const getState = createServerFn({ method: "GET" }).handler(async (): Prom
 
 export const signUpFn = createServerFn({ method: "POST" })
   .inputValidator(
-    (d: { name: string; email: string; role: Role; grade: string; password: string }) => {
+    (d: { name: string; email: string; role: Role; grade: string; password: string; schoolCode: string }) => {
       const raw = (d ?? {}) as Partial<typeof d>;
       return {
         name: str(raw.name, 120),
@@ -33,6 +33,7 @@ export const signUpFn = createServerFn({ method: "POST" })
         role: (raw.role ?? "student") as Role,
         grade: str(raw.grade, 10),
         password: str(raw.password, 200),
+        schoolCode: str(raw.schoolCode, 40),
       };
     },
   )
@@ -95,12 +96,14 @@ export const joinTeamFn = createServerFn({ method: "POST" })
   });
 
 export const createSchoolFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { name: string; mascot: string; district: string }) => {
+  .inputValidator((d: { name: string; mascot: string; district: string; primaryColor: string; secondaryColor: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     return {
       name: str(raw.name, 120),
       mascot: str(raw.mascot, 80),
       district: str(raw.district, 120),
+      primaryColor: str(raw.primaryColor, 7),
+      secondaryColor: str(raw.secondaryColor, 7),
     };
   })
   .handler(async ({ data }): Promise<CreateSchoolResult> => {
@@ -109,9 +112,13 @@ export const createSchoolFn = createServerFn({ method: "POST" })
   });
 
 export const requestAdminFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { schoolId: string; message: string }) => {
+  .inputValidator((d: { name: string; mascot: string; district: string; primaryColor: string; secondaryColor: string; message: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
-    return { schoolId: str(raw.schoolId, 60), message: str(raw.message, 1000) };
+    return {
+      name: str(raw.name, 120), mascot: str(raw.mascot, 80), district: str(raw.district, 120),
+      primaryColor: str(raw.primaryColor, 7), secondaryColor: str(raw.secondaryColor, 7),
+      message: str(raw.message, 1000),
+    };
   })
   .handler(async ({ data }): Promise<Result> => {
     const { requestAdmin } = await import("@/server/service");

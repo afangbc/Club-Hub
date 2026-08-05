@@ -228,6 +228,8 @@ export type SchoolSummary = {
   name: string;
   district: string;
   mascot: string;
+  primaryColor: string;
+  secondaryColor: string;
 };
 
 /** Owner-only view of a school, including the code that lets people in. */
@@ -246,8 +248,12 @@ export type AdminRequestStatus = "pending" | "approved" | "denied";
  */
 export type AdminRequest = {
   id: string;
-  schoolId: string;
+  schoolId?: string | undefined;
   schoolName: string;
+  district: string;
+  mascot: string;
+  primaryColor: string;
+  secondaryColor: string;
   name: string;
   email: string;
   /** Why they should be trusted with the campus — their words. */
@@ -289,10 +295,7 @@ export const roleLabel: Record<Role, string> = {
   admin: "School Admin",
 };
 
-/**
- * Frisco ISD hands students a k12 mailbox and staff a district mailbox, so the
- * domain is what tells a real sign-up apart from someone picking a role.
- */
+/** School-issued email is required, but ClubHub supports many districts. */
 export function emailProblem(email: string, role: Role): string | null {
   const value = email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Enter your full school email address.";
@@ -300,12 +303,8 @@ export function emailProblem(email: string, role: Role): string | null {
   const personalDomains = new Set([
     "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "aol.com",
   ]);
-  if (role === "admin" && personalDomains.has(domain))
-    return "Admins must use an email address issued by their school or district.";
-  if (role === "student" && !value.endsWith(`@${SCHOOL.studentDomain}`))
-    return `Students sign in with their @${SCHOOL.studentDomain} address.`;
-  if (role === "teacher" && !value.endsWith(`@${SCHOOL.staffDomain}`))
-    return `Staff sign in with their @${SCHOOL.staffDomain} address.`;
+  if (personalDomains.has(domain))
+    return `${role === "student" ? "Students" : "Staff"} must use an email address issued by their school or district.`;
   return null;
 }
 

@@ -58,6 +58,26 @@ async function migrate(parsed: LegacyDatabase): Promise<Database> {
   });
 
   next.adminRequests = next.adminRequests ?? [];
+  next.schools = (next.schools ?? []).map((school) => ({
+    ...school,
+    primaryColor: school.primaryColor ?? "#1d4ed8",
+    secondaryColor: school.secondaryColor ?? "#facc15",
+  }));
+  next.adminRequests = next.adminRequests.map((request) => {
+    if (request.schoolName) return request;
+    const oldSchool = next.schools.find((school) => school.id === request.schoolId);
+    return {
+      ...request,
+      schoolName: oldSchool?.name ?? "New school",
+      district: oldSchool?.district ?? "",
+      mascot: oldSchool?.mascot ?? "",
+      primaryColor: oldSchool?.primaryColor ?? "#1d4ed8",
+      secondaryColor: oldSchool?.secondaryColor ?? "#facc15",
+      // Legacy requests asked to take over an existing school. They must be
+      // submitted again under the safer new-school-only workflow.
+      status: request.status === "pending" ? "denied" : request.status,
+    };
+  });
   next.teams = next.teams ?? [];
   next.teamMemberships = next.teamMemberships ?? [];
 

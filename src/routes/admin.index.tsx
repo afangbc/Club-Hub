@@ -31,6 +31,7 @@ function randomCode() {
 function AdminHome() {
   const {
     session,
+    school,
     clubs,
     events,
     announcements,
@@ -72,7 +73,7 @@ function AdminHome() {
     <div>
       <h1 className="text-4xl">Campus console</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        {SCHOOL.name} · {SCHOOL.district} — you control the access code, the club list, and who gets
+        {school?.name ?? SCHOOL.name} · {school?.district ?? SCHOOL.district} — you control the access code, the club list, and who gets
         a sponsor account.
       </p>
 

@@ -139,6 +139,7 @@ function Index() {
                       role,
                       grade,
                       password,
+                      schoolCode: code,
                     })) ?? "",
                   );
                 } finally {
@@ -175,7 +176,7 @@ function Index() {
                 />
               )}
               {mode === "signup" && role === "student" && (
-                <label className="block">
+                <><label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Grade
                   </span>
@@ -191,6 +192,12 @@ function Index() {
                     ))}
                   </select>
                 </label>
+                <Field
+                  label="School code"
+                  value={code}
+                  onChange={(value) => setCode(value.toUpperCase())}
+                  placeholder="ABCD-1234"
+                /></>
               )}
               <Field
                 label="School email"

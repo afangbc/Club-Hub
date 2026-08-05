@@ -51,7 +51,7 @@ const BAD_CREDENTIALS = "That email and password don't match an account.";
 export type AppState = {
   user: Session | null;
   prefs: Prefs;
-  school: { name: string; mascot: string; district: string } | null;
+  school: { name: string; mascot: string; district: string; primaryColor: string; secondaryColor: string } | null;
   clubs: Club[];
   teams: Team[];
   events: ClubEvent[];
@@ -70,7 +70,7 @@ export type AppState = {
   adminRequests: AdminRequest[];
   /** The signed-in admin's own request, while they're waiting on an owner. */
   myAdminRequest: AdminRequest | null;
-  /** Campuses an admin without a school can ask to run. */
+  /** Existing campuses, shown only to owners. */
   schoolOptions: SchoolSummary[];
   /** False when CLUBHUB_OWNER_EMAILS is unset, so setup can't fail silently. */
   ownersConfigured: boolean;
@@ -129,11 +129,14 @@ function toTeam(db: Database, team: TeamRecord, viewer: UserRecord): Team {
 
 function toAdminRequest(db: Database, record: AdminRequestRecord): AdminRequest {
   const account = db.users.find((u) => u.id === record.userId);
-  const school = db.schools.find((s) => s.id === record.schoolId);
   return {
     id: record.id,
-    schoolId: record.schoolId,
-    schoolName: school?.name ?? "A deleted school",
+    ...(record.schoolId ? { schoolId: record.schoolId } : {}),
+    schoolName: record.schoolName,
+    district: record.district,
+    mascot: record.mascot,
+    primaryColor: record.primaryColor,
+    secondaryColor: record.secondaryColor,
     name: account?.name ?? "Deleted account",
     email: account?.email ?? "",
     message: record.message,
@@ -149,6 +152,8 @@ function toSchoolSummary(school: Database["schools"][number]): SchoolSummary {
     name: school.name,
     district: school.district,
     mascot: school.mascot,
+    primaryColor: school.primaryColor,
+    secondaryColor: school.secondaryColor,
   };
 }
 
@@ -327,7 +332,13 @@ export async function loadState(): Promise<AppState> {
     ...empty,
     user: toSession(user),
     prefs: user.prefs,
-    school: { name: school.name, mascot: school.mascot, district: school.district },
+    school: {
+      name: school.name,
+      mascot: school.mascot,
+      district: school.district,
+      primaryColor: school.primaryColor,
+      secondaryColor: school.secondaryColor,
+    },
     clubs: clubs.map((c) => toClub(db, c)),
     teams: visibleTeams.map((team) => toTeam(db, team, user)),
     events: db.events.filter((e) => clubs.some((c) => c.id === e.clubId)),
@@ -398,6 +409,7 @@ export async function signUp(input: {
   role: Role;
   grade: string;
   password: string;
+  schoolCode: string;
 }): Promise<Result> {
   const name = input.name.trim();
   const email = input.email.trim();
@@ -416,6 +428,13 @@ export async function signUp(input: {
 
   const passwordError = passwordProblem(input.password);
   if (passwordError) return fail(passwordError);
+
+  const signupDb = await getDatabase();
+  const studentSchool = input.role === "student" && !privileged
+    ? signupDb.schools.find((school) => norm(school.joinCode) === norm(input.schoolCode))
+    : null;
+  if (input.role === "student" && !privileged && !studentSchool)
+    return fail("Enter the school code your school gave you.");
 
   const passwordHash = await hashPassword(input.password);
 
@@ -438,7 +457,7 @@ export async function signUp(input: {
       status: input.role === "student" || privileged ? "active" : "pending",
       passwordHash,
       emailVerified: false,
-      schoolId: bootstrap ? (defaultSchool?.id ?? null) : null,
+      schoolId: bootstrap ? (defaultSchool?.id ?? null) : (studentSchool?.id ?? null),
       ...(input.role === "student" && input.grade ? { grade: input.grade } : {}),
       prefs: { ...defaultPrefs },
       createdAt: new Date().toISOString(),
@@ -579,12 +598,22 @@ export async function joinSchool(input: { code: string }): Promise<Result> {
 
 // ------------------------------------------------------- owner administration
 
-type SchoolSetupInput = { name: string; mascot: string; district: string };
+type SchoolSetupInput = {
+  name: string;
+  mascot: string;
+  district: string;
+  primaryColor: string;
+  secondaryColor: string;
+};
+
+const validHexColor = (value: string) => /^#[0-9a-f]{6}$/i.test(value.trim());
 
 function validateSchoolSetup(input: SchoolSetupInput): string | null {
   if (input.name.trim().length < 3) return "Enter the full school name.";
   if (input.district.trim().length < 2) return "Enter the school district or organization.";
   if (input.mascot.trim().length < 2) return "Enter the school mascot.";
+  if (!validHexColor(input.primaryColor) || !validHexColor(input.secondaryColor))
+    return "Choose two valid school colors.";
   return null;
 }
 
@@ -623,6 +652,8 @@ export async function createSchool(input: SchoolSetupInput): Promise<CreateSchoo
       mascot: input.mascot.trim(),
       district: input.district.trim(),
       joinCode,
+      primaryColor: input.primaryColor.trim().toLowerCase(),
+      secondaryColor: input.secondaryColor.trim().toLowerCase(),
     });
     return { error: null, joinCode };
   });
@@ -633,7 +664,7 @@ export async function createSchool(input: SchoolSetupInput): Promise<CreateSchoo
  * request carries no privilege on its own — approval is what moves the account
  * onto a campus.
  */
-export async function requestAdmin(input: { schoolId: string; message: string }): Promise<Result> {
+export async function requestAdmin(input: SchoolSetupInput & { message: string }): Promise<Result> {
   const user = await currentUser();
   if (!user) return fail("You're signed out. Sign in and try again.");
   if (!user.emailVerified) return fail("Confirm your email address first.");
@@ -642,19 +673,27 @@ export async function requestAdmin(input: { schoolId: string; message: string })
   if (user.schoolId) return fail("Your account already runs a campus.");
 
   const message = input.message.trim();
+  const setupProblem = validateSchoolSetup(input);
+  if (setupProblem) return fail(setupProblem);
   if (message.length < 20)
     return fail("Tell us who you are at the school and why you should run it — at least a sentence.");
 
   return transaction((db) => {
-    const school = db.schools.find((candidate) => candidate.id === input.schoolId);
-    if (!school) return fail("Pick a school.");
+    if (db.schools.some((school) => norm(school.name) === norm(input.name)))
+      return fail("That school is already on ClubHub. New applications must be for a new school.");
+    if (db.adminRequests.some((request) => request.status === "pending" && norm(request.schoolName) === norm(input.name)))
+      return fail("An application for that school is already waiting for review.");
     if (db.adminRequests.some((r) => r.userId === user.id && r.status === "pending"))
       return fail("You already have a request waiting on a ClubHub owner.");
 
     db.adminRequests.push({
       id: newId("adm"),
       userId: user.id,
-      schoolId: school.id,
+      schoolName: input.name.trim(),
+      district: input.district.trim(),
+      mascot: input.mascot.trim(),
+      primaryColor: input.primaryColor.trim().toLowerCase(),
+      secondaryColor: input.secondaryColor.trim().toLowerCase(),
       message: message.slice(0, 1000),
       status: "pending",
       createdAt: new Date().toISOString(),
@@ -674,17 +713,30 @@ export async function reviewAdminRequest(input: { id: string; approve: boolean }
 
     const account = db.users.find((u) => u.id === request.userId);
     if (!account) return fail("That account was deleted.");
-    const school = db.schools.find((s) => s.id === request.schoolId);
-    if (!school) return fail("That school was deleted.");
-
+    if (input.approve && db.schools.some((school) => norm(school.name) === norm(request.schoolName)))
+      return fail("That school was created while this request was waiting.");
     request.status = input.approve ? "approved" : "denied";
     request.decidedAt = new Date().toISOString();
     request.decidedBy = user.id;
 
     if (input.approve) {
+      let joinCode = schoolCode(request.schoolName);
+      while (db.schools.some((school) => norm(school.joinCode) === norm(joinCode)))
+        joinCode = schoolCode(request.schoolName);
+      const schoolId = newId("sch");
+      db.schools.push({
+        id: schoolId,
+        name: request.schoolName,
+        district: request.district,
+        mascot: request.mascot,
+        primaryColor: request.primaryColor,
+        secondaryColor: request.secondaryColor,
+        joinCode,
+      });
+      request.schoolId = schoolId;
       account.role = "admin";
       account.status = "active";
-      account.schoolId = school.id;
+      account.schoolId = schoolId;
     } else {
       account.status = "denied";
       // A rejected applicant shouldn't keep a live session.
