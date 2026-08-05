@@ -61,7 +61,7 @@ function OwnerConsole() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="page-content mx-auto max-w-5xl px-4 py-8">
         <h1 className="text-4xl">Owner console</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Nobody gets a school without an owner review. Approving an application creates a separate

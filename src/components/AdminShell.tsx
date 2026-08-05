@@ -91,7 +91,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <main className="page-content mx-auto max-w-6xl px-4 py-8">{children}</main>
     </div>
   );
 }
