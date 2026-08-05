@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Clock } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { formatTime } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 import { ClubCard } from "./clubs";
 
@@ -107,7 +108,7 @@ function MyClubs() {
                     month: "short",
                     day: "numeric",
                   })}{" "}
-                  · {e.start}
+                  · {formatTime(e.start)}
                 </span>
               </div>
             ))}

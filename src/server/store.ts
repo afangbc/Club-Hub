@@ -1,3 +1,5 @@
+import type { MeetingSchedule } from "@/lib/campus-data";
+import { scheduleFromText, timeFromText } from "./legacy";
 import { buildSeedDatabase, DB_VERSION, type Database } from "./schema";
 import { getStorageDriver } from "./storage";
 
@@ -5,24 +7,73 @@ let ready: Promise<Database> | null = null;
 /** Writes are chained so two concurrent requests can't clobber each other. */
 let writeChain: Promise<unknown> = Promise.resolve();
 
+// ------------------------------------------------------------------ migration
+
+type LegacyClub = { meets?: string; schedule?: MeetingSchedule };
+type LegacyEvent = { start?: string; end?: string };
+type LegacyDatabase = Database & {
+  /** Version 1 held a single school rather than a list. */
+  school?: Database["schools"][number];
+  schoolVerifications?: unknown;
+};
+
+/**
+ * Brings an older database up to the current shape in place. Nothing is dropped
+ * except the school-verification queue, which backed the self-serve school
+ * creation that owners now do themselves.
+ */
+function migrate(parsed: LegacyDatabase): Database {
+  const next = parsed as LegacyDatabase;
+
+  if (next.version === 1 && next.school) {
+    next.schools = [next.school];
+    delete next.school;
+  }
+
+  // Accounts that predate the email-verification rule are grandfathered in;
+  // locking out an entire campus retroactively would be worse than the gap.
+  next.users = (next.users ?? []).map((user) =>
+    user.emailVerified === undefined ? { ...user, emailVerified: true } : user,
+  );
+  next.emailVerifications = next.emailVerifications ?? [];
+
+  next.clubs = (next.clubs ?? []).map((club) => {
+    const legacy = club as Database["clubs"][number] & LegacyClub;
+    if (legacy.schedule) return club;
+    legacy.schedule = scheduleFromText(legacy.meets ?? "");
+    delete legacy.meets;
+    return legacy;
+  });
+
+  next.events = (next.events ?? []).map((event) => {
+    const legacy = event as unknown as LegacyEvent;
+    return {
+      ...event,
+      start: timeFromText(legacy.start ?? "", "16:00"),
+      end: timeFromText(legacy.end ?? "", "17:00"),
+    };
+  });
+
+  next.adminRequests = next.adminRequests ?? [];
+  delete next.schoolVerifications;
+  next.version = DB_VERSION;
+  return next as Database;
+}
+
+// ----------------------------------------------------------------- load/write
+
 async function load(): Promise<Database> {
   const driver = await getStorageDriver();
   const raw = await driver.read();
 
   if (raw) {
     try {
-      const parsed = JSON.parse(raw) as Database & { school?: Database["schools"][number] };
+      const parsed = JSON.parse(raw) as LegacyDatabase;
       if (parsed.version === DB_VERSION) return parsed;
-      if (parsed.version === 1 && parsed.school) {
-        const migrated: Database = {
-          ...parsed,
-          version: DB_VERSION,
-          schools: [parsed.school],
-          schoolVerifications: [],
-        };
-        delete (migrated as Database & { school?: unknown }).school;
+      if (parsed.version >= 1 && parsed.version < DB_VERSION) {
+        const migrated = migrate(parsed);
         await driver.write(JSON.stringify(migrated, null, 2));
-        console.info("[clubhub] Migrated database from version 1 to version 2.");
+        console.info(`[clubhub] Migrated database to version ${DB_VERSION}.`);
         return migrated;
       }
       console.warn(
@@ -33,7 +84,7 @@ async function load(): Promise<Database> {
     }
   }
 
-  const seeded = await buildSeedDatabase();
+  const seeded = buildSeedDatabase();
   await driver.write(JSON.stringify(seeded, null, 2));
   console.info(`[clubhub] Seeded a new database via ${driver.kind}.`);
   return seeded;

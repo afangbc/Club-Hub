@@ -21,11 +21,13 @@ const nav = [
 export function StaffShell({ children }: { children: ReactNode }) {
   const { session, joined, ready, signOut } = useSession();
   const navigate = useNavigate();
-  const allowed = session?.role === "teacher" && session.status === "active" && joined;
+  const allowed =
+    session?.role === "teacher" && session.status === "active" && session.emailVerified && joined;
 
   useEffect(() => {
     if (!ready) return;
     if (!session) navigate({ to: "/", replace: true });
+    else if (!session.emailVerified) navigate({ to: "/verify-email", replace: true });
     else if (session.role === "admin") navigate({ to: "/admin", replace: true });
     else if (session.role !== "teacher") navigate({ to: "/clubs", replace: true });
     else if (session.status !== "active") navigate({ to: "/pending", replace: true });

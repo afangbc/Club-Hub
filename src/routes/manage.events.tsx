@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
-import { SelectField, TextField } from "@/components/form-fields";
+import { ClockField, SelectField, TextField } from "@/components/form-fields";
+import { formatTime } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
-import { staffClubs } from "@/lib/staff";
+import { campusRooms, staffClubs } from "@/lib/staff";
 
 export const Route = createFileRoute("/manage/events")({
   head: () => ({
@@ -31,8 +32,8 @@ function Meetings() {
   const [picked, setPicked] = useState("");
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
-  const [start, setStart] = useState("4:00 PM");
-  const [end, setEnd] = useState("5:00 PM");
+  const [start, setStart] = useState("16:00");
+  const [end, setEnd] = useState("17:00");
   const [location, setLocation] = useState("");
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
@@ -96,10 +97,19 @@ function Meetings() {
           />
           <TextField label="Date" value={date} onChange={setDate} type="date" />
           <div className="grid grid-cols-2 gap-3">
-            <TextField label="Start" value={start} onChange={setStart} />
-            <TextField label="End" value={end} onChange={setEnd} />
+            <ClockField label="Start" value={start} onChange={setStart} />
+            <ClockField label="End" value={end} onChange={setEnd} />
           </div>
-          <TextField label="Location" value={location} onChange={setLocation} placeholder="C-214" />
+          <TextField
+            label="Location"
+            value={location}
+            onChange={setLocation}
+            placeholder="C-214"
+            suggestions={campusRooms(
+              clubs,
+              events.map((e) => e.location),
+            )}
+          />
           {error && <p className="text-sm text-destructive">{error}</p>}
           {ok && <p className="text-sm text-success">{ok}</p>}
           <button
@@ -118,12 +128,17 @@ function Meetings() {
           {list.map((e) => (
             <li key={e.id} className="card-surface flex items-center gap-4 p-3">
               <div className="w-24 shrink-0 text-xs font-semibold text-muted-foreground">
-                {e.date}
+                {new Date(`${e.date}T12:00:00`).toLocaleDateString(undefined, {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                })}
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold">{e.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {clubs.find((c) => c.id === e.clubId)?.name} · {e.start}–{e.end} · {e.location}
+                  {clubs.find((c) => c.id === e.clubId)?.name} · {formatTime(e.start)}–
+                  {formatTime(e.end)} · {e.location}
                 </p>
               </div>
               <button

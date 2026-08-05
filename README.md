@@ -27,9 +27,13 @@ Prefer working locally? Install [Bun](https://bun.com/docs/installation), then r
 ```sh
 git clone <this-repository-url>
 cd <repository-name>
+cp .env.example .env   # then put your email in CLUBHUB_OWNER_EMAILS
 bun install --frozen-lockfile
 bun run dev
 ```
+
+Set `CLUBHUB_OWNER_EMAILS` before you sign up — it's what turns your account into
+the owner console, and without it nobody can approve a school admin.
 
 ## How the backend works
 
@@ -38,12 +42,18 @@ Accounts, clubs, memberships, meetings, and announcements live server-side in
 
 - **Storage** — the whole database is one JSON document written through
   `src/server/storage.ts`. Production uses Upstash Redis. Local development uses
-  `.data/clubhub.json` (override with `CLUBHUB_DATA_FILE`). The database is seeded
-  with Frisco High School on first run.
+  `.data/clubhub.json` (override with `CLUBHUB_DATA_FILE`). A fresh database holds
+  exactly one record: Frisco High School and its campus code. There are no seeded
+  accounts, clubs, or meetings — everything students see was made by a real person.
 - **Passwords** — hashed with PBKDF2-HMAC-SHA256, 210,000 iterations, a random
   16-byte salt per account, verified in constant time. Plaintext is never
   stored or logged. WebCrypto only, so the same code runs on Node and on edge
   runtimes.
+- **Email confirmation** — every sign-up mails a six-digit code and the account
+  can do nothing until it comes back: no campus, no club list, not even the owner
+  console. Only the code's SHA-256 is stored. Codes expire in ten minutes, allow
+  five attempts, and can't be resent more than once a minute. Changing your email
+  address clears the flag and sends a new code.
 - **Sessions** — a 256-bit random token in an HttpOnly, SameSite=Lax cookie
   (Secure in production). Only the SHA-256 of the token is stored, so a database
   dump can't be replayed as a login. Changing a password revokes every session,
@@ -53,24 +63,47 @@ Accounts, clubs, memberships, meetings, and announcements live server-side in
   they sponsor; only admins reassign sponsors, rotate the campus code, or
   approve staff. The browser never decides permissions.
 - **Sign-in throttling** — 10 failed attempts per email in 15 minutes.
-- **School onboarding** — unassociated admins verify their email with a six-digit,
-  ten-minute code before creating a school and receiving a unique campus join code.
+
+## Who can become what
+
+Nobody grants themselves a role. Each tier is approved by the one above it:
+
+| Role | How you get it | What it controls |
+| --- | --- | --- |
+| Student | Sign up + enter the campus code | Joining clubs, own calendar |
+| Teacher | Sign up, then a **school admin** approves | The clubs they sponsor |
+| School admin | Sign up, request a campus, then a **ClubHub owner** approves | The whole campus: access code, clubs, staff |
+| ClubHub owner | Listed in `CLUBHUB_OWNER_EMAILS` | Approving admins, creating schools |
+
+Everyone confirms their email address first, whatever the role.
+
+`CLUBHUB_ADMIN_EMAILS` is a temporary shortcut past the request queue: an account
+signing up with a listed address becomes an active admin of the default school
+immediately. Use it to get a campus running before an owner is around, then clear
+it — accounts already created keep their campus until an owner revokes them.
+
+Owner is read from the environment on every request by `src/server/owners.ts` —
+it is never stored in the database and has no sign-up path, so it can't be
+reached by editing a record, replaying a session, or compromising an admin.
+Signing up as a school admin creates a **pending** account with no school; it
+lands in the owner console's request queue and stays powerless until approved.
+
+### Setting up the first campus
+
+1. Put your email in `CLUBHUB_OWNER_EMAILS` and restart the server.
+2. Sign up with that email. You land on `/owner` instead of a campus.
+3. Frisco High School already exists; use **Add a school** for any other campus.
+   Each one gets a generated join code.
+4. Share the campus code with students and staff.
+5. When someone signs up as a school admin and requests the campus, approve them
+   from the owner console. They can then approve teachers and rotate the code.
 
 `src/lib/api.ts` is the RPC surface. Each handler reaches the service through a
 dynamic import, so no server-only code can be pulled into the client bundle.
 
-### Demo accounts
-
-All seeded accounts use the password `raccoons26`, and the starting campus code
-is `RACCOONS26`.
-
-| Role | Email |
-| --- | --- |
-| Student | `jordan.rivera.123@k12.friscoisd.org` |
-| Teacher | `marcus.alvarez@friscoisd.org` |
-| School admin | `alicia.nguyen@friscoisd.org` |
-
-Delete `.data/clubhub.json` to reset the campus back to seed data.
+Delete `.data/clubhub.json` to reset the campus back to an empty Frisco High
+School. Every account, club, and meeting is gone with it — there is no demo data
+to fall back on.
 
 ## Deploying to Vercel
 
@@ -85,13 +118,12 @@ database.
    `UPSTASH_REDIS_REST_TOKEN` for Production, Preview, and Development.
 4. Redeploy the latest commit so the new environment variables are available.
 
+5. Add `CLUBHUB_OWNER_EMAILS` to Production, Preview, and Development. Without it
+   the deployment has no owner console and no admin can ever be approved.
+6. Add `RESEND_API_KEY` and `CLUBHUB_FROM_EMAIL`, with the sender address or its
+   domain verified in Resend. **Production refuses to fall back to console
+   logging**, so without these nobody can finish signing up.
+
 The optional `CLUBHUB_REDIS_KEY` variable changes the Redis key used for the
 database. Keep the default unless multiple ClubHub installations share one Redis
 database. Never expose the Upstash REST token to browser code or commit it.
-
-### Verification email setup
-
-School creation sends one-time codes through Resend. In Vercel, add
-`RESEND_API_KEY` and `CLUBHUB_FROM_EMAIL` to Production, Preview, and Development.
-The sender address or its domain must be verified in Resend. Codes expire after ten
-minutes, allow five attempts, and cannot be resent more than once per minute.

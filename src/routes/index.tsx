@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { DEMO_PASSWORD, GRADES, SCHOOL, homeFor, type Role } from "@/lib/campus-data";
+import { GRADES, SCHOOL, homeFor, type Role } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/")({
@@ -25,13 +25,7 @@ export const Route = createFileRoute("/")({
 const roles: { value: Role; label: string; hint: string }[] = [
   { value: "student", label: "Student", hint: "Join clubs & see your calendar" },
   { value: "teacher", label: "Teacher", hint: "Sponsor clubs & post meetings" },
-  { value: "admin", label: "School Admin", hint: "Run the campus & approve staff" },
-];
-
-const demoLogins = [
-  { role: "Student", email: `jordan.rivera.123@${SCHOOL.studentDomain}` },
-  { role: "Teacher", email: `marcus.alvarez@${SCHOOL.staffDomain}` },
-  { role: "Admin", email: `alicia.nguyen@${SCHOOL.staffDomain}` },
+  { value: "admin", label: "School Admin", hint: "Request the campus from ClubHub" },
 ];
 
 function Index() {
@@ -51,7 +45,14 @@ function Index() {
   const destination = homeFor(session);
 
   useEffect(() => {
-    if (ready && session && (joined || session.role === "admin")) navigate({ to: destination, replace: true });
+    // An unconfirmed address goes to the code screen before anything else.
+    // Admins and owners never enter a campus code, so they skip step 2 entirely.
+    if (
+      ready &&
+      session &&
+      (!session.emailVerified || joined || session.owner || session.role === "admin")
+    )
+      navigate({ to: destination, replace: true });
   }, [ready, session, joined, destination, navigate]);
 
   const step: 1 | 2 = session ? 2 : 1;
@@ -208,9 +209,15 @@ function Index() {
                   placeholder="Re-enter password"
                 />
               )}
-              {mode === "signup" && role !== "student" && (
+              {mode === "signup" && role === "teacher" && (
                 <p className="rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground">
-                  Staff accounts stay locked until a school admin approves them.
+                  Teacher accounts stay locked until a school admin approves them.
+                </p>
+              )}
+              {mode === "signup" && role === "admin" && (
+                <p className="rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground">
+                  Nobody gets an admin account by signing up. You'll ask ClubHub for a campus on the
+                  next screen, and we approve every one by hand.
                 </p>
               )}
               {error && <p className="text-sm text-destructive">{error}</p>}
@@ -230,31 +237,6 @@ function Index() {
                   {mode === "signup" ? "Sign in" : "Create an account"}
                 </button>
               </p>
-
-              {mode === "signin" && (
-                <div className="rounded-md bg-secondary p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Demo accounts · password {DEMO_PASSWORD}
-                  </p>
-                  <ul className="mt-2 space-y-1">
-                    {demoLogins.map((d) => (
-                      <li key={d.email}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEmail(d.email);
-                            setPassword(DEMO_PASSWORD);
-                            setError("");
-                          }}
-                          className="text-left text-xs text-secondary-foreground underline underline-offset-2"
-                        >
-                          <span className="font-semibold">{d.role}</span> — {d.email}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </form>
           ) : (
             <form
@@ -280,13 +262,13 @@ function Index() {
                 label="School access code"
                 value={code}
                 onChange={(v) => setCode(v.toUpperCase())}
-                placeholder={SCHOOL.defaultJoinCode}
+                placeholder="ABCD-1234"
               />
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Submit busy={busy}>Enter ClubHub</Submit>
               <p className="rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground">
-                Starting code: <span className="font-semibold">{SCHOOL.defaultJoinCode}</span> — an
-                admin may have rotated it since.
+                Your sponsor, coach, or front office has the current code. It changes when the
+                school rotates it.
               </p>
             </form>
           )}

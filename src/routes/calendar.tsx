@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { formatTime } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/calendar")({
@@ -127,11 +128,11 @@ function CalendarPage() {
                   {dayEvents.map((e) => (
                     <div
                       key={e.id}
-                      title={`${e.title} · ${e.start}–${e.end} · ${e.location}`}
+                      title={`${e.title} · ${formatTime(e.start)}–${formatTime(e.end)} · ${e.location}`}
                       className="rounded bg-accent px-1.5 py-1 text-[11px] leading-tight text-accent-foreground"
                     >
                       <p className="truncate font-semibold">{e.title}</p>
-                      <p className="truncate opacity-75">{e.start}</p>
+                      <p className="truncate opacity-75">{formatTime(e.start)}</p>
                     </div>
                   ))}
                 </div>
@@ -163,7 +164,7 @@ function CalendarPage() {
                     {clubs.find((c) => c.id === e.clubId)?.name} · {e.location}
                   </span>
                   <span className="ml-auto text-xs">
-                    {e.start} – {e.end}
+                    {formatTime(e.start)} – {formatTime(e.end)}
                   </span>
                 </div>
               ))}

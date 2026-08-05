@@ -15,10 +15,12 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as ClubsRouteImport } from './routes/clubs'
-import { Route as CreateSchoolRouteImport } from './routes/create-school'
 import { Route as ManageRouteImport } from './routes/manage'
 import { Route as MyClubsRouteImport } from './routes/my-clubs'
+import { Route as OwnerRouteImport } from './routes/owner'
 import { Route as PendingRouteImport } from './routes/pending'
+import { Route as RequestAdminRouteImport } from './routes/request-admin'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminClubsRouteImport } from './routes/admin.clubs'
 import { Route as AdminTeachersRouteImport } from './routes/admin.teachers'
@@ -58,11 +60,6 @@ const ClubsRoute = ClubsRouteImport.update({
   path: '/clubs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CreateSchoolRoute = CreateSchoolRouteImport.update({
-  id: '/create-school',
-  path: '/create-school',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ManageRoute = ManageRouteImport.update({
   id: '/manage',
   path: '/manage',
@@ -73,9 +70,24 @@ const MyClubsRoute = MyClubsRouteImport.update({
   path: '/my-clubs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OwnerRoute = OwnerRouteImport.update({
+  id: '/owner',
+  path: '/owner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PendingRoute = PendingRouteImport.update({
   id: '/pending',
   path: '/pending',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestAdminRoute = RequestAdminRouteImport.update({
+  id: '/request-admin',
+  path: '/request-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -126,10 +138,12 @@ export interface FileRoutesByFullPath {
   '/announcements': typeof AnnouncementsRoute
   '/calendar': typeof CalendarRoute
   '/clubs': typeof ClubsRoute
-  '/create-school': typeof CreateSchoolRoute
   '/manage': typeof ManageRouteWithChildren
   '/my-clubs': typeof MyClubsRoute
+  '/owner': typeof OwnerRoute
   '/pending': typeof PendingRoute
+  '/request-admin': typeof RequestAdminRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/admin/clubs': typeof AdminClubsRoute
   '/admin/teachers': typeof AdminTeachersRoute
   '/admin/users': typeof AdminUsersRoute
@@ -145,9 +159,11 @@ export interface FileRoutesByTo {
   '/announcements': typeof AnnouncementsRoute
   '/calendar': typeof CalendarRoute
   '/clubs': typeof ClubsRoute
-  '/create-school': typeof CreateSchoolRoute
   '/my-clubs': typeof MyClubsRoute
+  '/owner': typeof OwnerRoute
   '/pending': typeof PendingRoute
+  '/request-admin': typeof RequestAdminRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/admin/clubs': typeof AdminClubsRoute
   '/admin/teachers': typeof AdminTeachersRoute
   '/admin/users': typeof AdminUsersRoute
@@ -165,10 +181,12 @@ export interface FileRoutesById {
   '/announcements': typeof AnnouncementsRoute
   '/calendar': typeof CalendarRoute
   '/clubs': typeof ClubsRoute
-  '/create-school': typeof CreateSchoolRoute
   '/manage': typeof ManageRouteWithChildren
   '/my-clubs': typeof MyClubsRoute
+  '/owner': typeof OwnerRoute
   '/pending': typeof PendingRoute
+  '/request-admin': typeof RequestAdminRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/admin/clubs': typeof AdminClubsRoute
   '/admin/teachers': typeof AdminTeachersRoute
   '/admin/users': typeof AdminUsersRoute
@@ -187,10 +205,12 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/calendar'
     | '/clubs'
-    | '/create-school'
     | '/manage'
     | '/my-clubs'
+    | '/owner'
     | '/pending'
+    | '/request-admin'
+    | '/verify-email'
     | '/admin/clubs'
     | '/admin/teachers'
     | '/admin/users'
@@ -206,9 +226,11 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/calendar'
     | '/clubs'
-    | '/create-school'
     | '/my-clubs'
+    | '/owner'
     | '/pending'
+    | '/request-admin'
+    | '/verify-email'
     | '/admin/clubs'
     | '/admin/teachers'
     | '/admin/users'
@@ -225,10 +247,12 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/calendar'
     | '/clubs'
-    | '/create-school'
     | '/manage'
     | '/my-clubs'
+    | '/owner'
     | '/pending'
+    | '/request-admin'
+    | '/verify-email'
     | '/admin/clubs'
     | '/admin/teachers'
     | '/admin/users'
@@ -246,10 +270,12 @@ export interface RootRouteChildren {
   AnnouncementsRoute: typeof AnnouncementsRoute
   CalendarRoute: typeof CalendarRoute
   ClubsRoute: typeof ClubsRoute
-  CreateSchoolRoute: typeof CreateSchoolRoute
   ManageRoute: typeof ManageRouteWithChildren
   MyClubsRoute: typeof MyClubsRoute
+  OwnerRoute: typeof OwnerRoute
   PendingRoute: typeof PendingRoute
+  RequestAdminRoute: typeof RequestAdminRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -296,13 +322,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClubsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/create-school': {
-      id: '/create-school'
-      path: '/create-school'
-      fullPath: '/create-school'
-      preLoaderRoute: typeof CreateSchoolRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/manage': {
       id: '/manage'
       path: '/manage'
@@ -317,11 +336,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyClubsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/owner': {
+      id: '/owner'
+      path: '/owner'
+      fullPath: '/owner'
+      preLoaderRoute: typeof OwnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pending': {
       id: '/pending'
       path: '/pending'
       fullPath: '/pending'
       preLoaderRoute: typeof PendingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/request-admin': {
+      id: '/request-admin'
+      path: '/request-admin'
+      fullPath: '/request-admin'
+      preLoaderRoute: typeof RequestAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -423,10 +463,12 @@ const rootRouteChildren: RootRouteChildren = {
   AnnouncementsRoute: AnnouncementsRoute,
   CalendarRoute: CalendarRoute,
   ClubsRoute: ClubsRoute,
-  CreateSchoolRoute: CreateSchoolRoute,
   ManageRoute: ManageRouteWithChildren,
   MyClubsRoute: MyClubsRoute,
+  OwnerRoute: OwnerRoute,
   PendingRoute: PendingRoute,
+  RequestAdminRoute: RequestAdminRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

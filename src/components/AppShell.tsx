@@ -21,11 +21,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!ready) return;
     if (!session) navigate({ to: "/", replace: true });
+    else if (!session.emailVerified) navigate({ to: "/verify-email", replace: true });
     else if (locked) navigate({ to: "/pending", replace: true });
     else if (!joined) navigate({ to: "/", replace: true });
   }, [ready, session, joined, locked, navigate]);
 
-  if (!ready || !session || !joined || locked) return null;
+  if (!ready || !session || !session.emailVerified || !joined || locked) return null;
 
   return (
     <div className="min-h-screen bg-background">

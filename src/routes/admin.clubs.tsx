@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ClubForm } from "@/components/ClubForm";
 import type { Club, StaffAccount } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
+import { campusRooms } from "@/lib/staff";
 
 export const Route = createFileRoute("/admin/clubs")({
   head: () => ({
@@ -25,6 +26,7 @@ function AdminClubs() {
   const { clubs, sponsors, createClub } = useSession();
   const [q, setQ] = useState("");
   const [creating, setCreating] = useState(false);
+  const rooms = campusRooms(clubs);
 
   const results = clubs.filter(
     (c) =>
@@ -64,6 +66,7 @@ function AdminClubs() {
           ) : (
             <ClubForm
               sponsors={sponsors}
+              rooms={rooms}
               submitLabel="Create club"
               onCancel={() => setCreating(false)}
               onSubmit={async (input) => {
@@ -88,7 +91,7 @@ function AdminClubs() {
 
       <div className="mt-6 space-y-3">
         {results.map((club) => (
-          <ClubRow key={club.id} club={club} sponsors={sponsors} />
+          <ClubRow key={club.id} club={club} sponsors={sponsors} rooms={rooms} />
         ))}
         {results.length === 0 && (
           <p className="card-surface p-6 text-center text-sm text-muted-foreground">
@@ -100,7 +103,15 @@ function AdminClubs() {
   );
 }
 
-function ClubRow({ club, sponsors }: { club: Club; sponsors: StaffAccount[] }) {
+function ClubRow({
+  club,
+  sponsors,
+  rooms,
+}: {
+  club: Club;
+  sponsors: StaffAccount[];
+  rooms: string[];
+}) {
   const { updateClub, deleteClub } = useSession();
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -156,13 +167,14 @@ function ClubRow({ club, sponsors }: { club: Club; sponsors: StaffAccount[] }) {
           <ClubForm
             key={club.id}
             sponsors={options}
+            rooms={rooms}
             submitLabel="Save changes"
             initial={{
               name: club.name,
               category: club.category,
               visibility: club.visibility,
               sponsorId: club.sponsorId,
-              meets: club.meets,
+              schedule: club.schedule,
               room: club.room,
               blurb: club.blurb,
               joinInstructions: club.joinInstructions ?? "",

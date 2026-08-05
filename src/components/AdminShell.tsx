@@ -14,7 +14,8 @@ const nav = [
 export function AdminShell({ children }: { children: ReactNode }) {
   const { session, school, ready, signOut, pendingStaff } = useSession();
   const navigate = useNavigate();
-  const isAdmin = session?.role === "admin" && session.status === "active";
+  const isAdmin =
+    session?.role === "admin" && session.status === "active" && session.emailVerified;
 
   useEffect(() => {
     if (!ready) return;

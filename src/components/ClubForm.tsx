@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { SelectField, TextArea, TextField } from "@/components/form-fields";
-import { CATEGORIES, type ClubCategory, type StaffAccount } from "@/lib/campus-data";
+import { ScheduleField } from "@/components/ScheduleField";
+import {
+  CATEGORIES,
+  defaultSchedule,
+  type ClubCategory,
+  type MeetingSchedule,
+  type StaffAccount,
+} from "@/lib/campus-data";
 import type { ClubInput } from "@/lib/session";
 
 /**
@@ -13,12 +20,15 @@ export function ClubForm({
   submitLabel,
   onSubmit,
   onCancel,
+  rooms,
 }: {
   initial?: Partial<ClubInput>;
   sponsors?: StaffAccount[];
   submitLabel: string;
   onSubmit: (input: ClubInput) => Promise<string | null>;
   onCancel?: () => void;
+  /** Rooms already in use on campus, offered as autocomplete. */
+  rooms?: string[];
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [category, setCategory] = useState<ClubCategory>(initial?.category ?? "Academic");
@@ -26,7 +36,7 @@ export function ClubForm({
     initial?.visibility ?? "public",
   );
   const [sponsorId, setSponsorId] = useState(initial?.sponsorId ?? sponsors?.[0]?.id ?? "");
-  const [meets, setMeets] = useState(initial?.meets ?? "");
+  const [schedule, setSchedule] = useState<MeetingSchedule>(initial?.schedule ?? defaultSchedule);
   const [room, setRoom] = useState(initial?.room ?? "");
   const [blurb, setBlurb] = useState(initial?.blurb ?? "");
   const [instructions, setInstructions] = useState(initial?.joinInstructions ?? "");
@@ -47,7 +57,7 @@ export function ClubForm({
           category,
           visibility,
           room,
-          meets,
+          schedule,
           blurb,
           joinInstructions: instructions,
           sponsorId,
@@ -81,13 +91,16 @@ export function ClubForm({
           { value: "private" as const, label: "Private — the sponsor approves each member" },
         ]}
       />
-      <TextField
-        label="Meeting time"
-        value={meets}
-        onChange={setMeets}
-        placeholder="Tuesdays, 4:15 PM"
-      />
-      <TextField label="Room" value={room} onChange={setRoom} placeholder="C-214" />
+      <ScheduleField value={schedule} onChange={setSchedule} />
+      <div className="self-start">
+        <TextField
+          label="Room"
+          value={room}
+          onChange={setRoom}
+          placeholder="C-214"
+          {...(rooms?.length ? { suggestions: rooms } : {})}
+        />
+      </div>
       <div className="md:col-span-2">
         <TextArea
           label="Description"

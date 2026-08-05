@@ -6,7 +6,10 @@
 
 export type Role = "student" | "teacher" | "admin";
 
-/** Teachers sign up, then wait on a school admin. Students and admins are active immediately. */
+/**
+ * Students are active the moment they enter a campus code. Staff wait: teachers
+ * on their school admin, admins on a ClubHub owner.
+ */
 export type AccountStatus = "active" | "pending" | "denied";
 
 export type ClubCategory = "Academic" | "Service" | "Arts" | "STEM" | "Culture" | "Athletics";
@@ -30,9 +33,114 @@ export type Session = {
   role: Role;
   status: AccountStatus;
   grade?: string | undefined;
+  /** False until the emailed six-digit code comes back. Gates everything. */
+  emailVerified: boolean;
   /** Null until the account enters the campus access code. */
   schoolId: string | null;
+  /**
+   * True for the people who run ClubHub itself. Derived on the server from an
+   * environment allowlist, never from anything stored or submitted, so no
+   * sign-up path can hand it to itself.
+   */
+  owner: boolean;
 };
+
+// ------------------------------------------------------------ meeting schedule
+
+/**
+ * When a club meets. Stored as parts rather than prose so a sponsor picks
+ * "Thursdays · 9:00 PM · every other week" instead of typing it, and so the
+ * calendar and directory can render one consistent phrasing everywhere.
+ */
+export type MeetingSchedule = {
+  frequency: Frequency;
+  /** 0 = Sunday … 6 = Saturday. Ignored when the club meets daily. */
+  weekday: number;
+  /** 1st–4th, or 5 for "last". Only used by monthly clubs. */
+  week: number;
+  /** 0–23. Paired with `minute` this is a plain 24-hour clock time. */
+  hour: number;
+  minute: number;
+};
+
+export type Frequency = "weekly" | "biweekly" | "monthly" | "daily";
+
+export const FREQUENCIES: { value: Frequency; label: string }[] = [
+  { value: "weekly", label: "Every week" },
+  { value: "biweekly", label: "Every other week" },
+  { value: "monthly", label: "Once a month" },
+  { value: "daily", label: "Every school day" },
+];
+
+export const WEEKDAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const;
+
+export const WEEK_ORDINALS = ["1st", "2nd", "3rd", "4th", "Last"] as const;
+
+export const defaultSchedule: MeetingSchedule = {
+  frequency: "weekly",
+  weekday: 2,
+  week: 1,
+  hour: 16,
+  minute: 0,
+};
+
+/** Clamps anything that arrives off the wire into a schedule we can render. */
+export function normalizeSchedule(input: Partial<MeetingSchedule> | undefined): MeetingSchedule {
+  const whole = (value: unknown, min: number, max: number, fallback: number) => {
+    const n = Math.trunc(Number(value));
+    return Number.isFinite(n) && n >= min && n <= max ? n : fallback;
+  };
+  const frequency = FREQUENCIES.some((f) => f.value === input?.frequency)
+    ? (input?.frequency as Frequency)
+    : defaultSchedule.frequency;
+  return {
+    frequency,
+    weekday: whole(input?.weekday, 0, 6, defaultSchedule.weekday),
+    week: whole(input?.week, 1, 5, defaultSchedule.week),
+    hour: whole(input?.hour, 0, 23, defaultSchedule.hour),
+    minute: whole(input?.minute, 0, 59, defaultSchedule.minute),
+  };
+}
+
+/** 16, 15 → "4:15 PM". The whole app shows times in this one format. */
+export function formatClock(hour: number, minute: number): string {
+  const suffix = hour < 12 ? "AM" : "PM";
+  const twelve = hour % 12 === 0 ? 12 : hour % 12;
+  return `${twelve}:${String(minute).padStart(2, "0")} ${suffix}`;
+}
+
+/** "16:15" → "4:15 PM". Events store a 24-hour clock string. */
+export function formatTime(value: string): string {
+  const [h, m] = value.split(":");
+  const hour = Number(h);
+  const minute = Number(m);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return value;
+  return formatClock(hour, minute);
+}
+
+/** The one-line phrasing students read in the directory and on a club card. */
+export function formatSchedule(schedule: MeetingSchedule): string {
+  const time = formatClock(schedule.hour, schedule.minute);
+  const day = WEEKDAYS[schedule.weekday] ?? WEEKDAYS[1];
+  switch (schedule.frequency) {
+    case "daily":
+      return `Daily, ${time}`;
+    case "biweekly":
+      return `Every other ${day}, ${time}`;
+    case "monthly":
+      return `${WEEK_ORDINALS[schedule.week - 1] ?? "1st"} ${day} of the month, ${time}`;
+    default:
+      return `${day}s, ${time}`;
+  }
+}
 
 export type Club = {
   id: string;
@@ -43,6 +151,8 @@ export type Club = {
   sponsorName: string;
   sponsorEmail: string;
   room: string;
+  schedule: MeetingSchedule;
+  /** `formatSchedule(schedule)`, precomputed so every surface reads the same. */
   meets: string;
   members: number;
   blurb: string;
@@ -54,6 +164,7 @@ export type ClubEvent = {
   clubId: string;
   title: string;
   date: string; // ISO yyyy-mm-dd
+  /** 24-hour "HH:MM" — run it through `formatTime` before showing it. */
   start: string;
   end: string;
   location: string;
@@ -98,6 +209,41 @@ export type SchoolAccount = {
   grade?: string | undefined;
 };
 
+/** Just enough about a school to pick it from a list before you belong to it. */
+export type SchoolSummary = {
+  id: string;
+  name: string;
+  district: string;
+  mascot: string;
+};
+
+/** Owner-only view of a school, including the code that lets people in. */
+export type SchoolDetail = SchoolSummary & {
+  joinCode: string;
+  admins: number;
+  students: number;
+  clubs: number;
+};
+
+export type AdminRequestStatus = "pending" | "approved" | "denied";
+
+/**
+ * Somebody asking to run a campus. Only a ClubHub owner can approve one — that
+ * is the whole point of the queue.
+ */
+export type AdminRequest = {
+  id: string;
+  schoolId: string;
+  schoolName: string;
+  name: string;
+  email: string;
+  /** Why they should be trusted with the campus — their words. */
+  message: string;
+  status: AdminRequestStatus;
+  createdAt: string;
+  decidedAt?: string | undefined;
+};
+
 export type Prefs = {
   eventReminders: boolean;
   announcements: boolean;
@@ -123,9 +269,6 @@ export const SCHOOL = {
   /** Only the seed value — an admin can rotate the live code from the console. */
   defaultJoinCode: "RACCOONS26",
 };
-
-/** Seeded demo accounts all share this password so each role can be signed into. */
-export const DEMO_PASSWORD = "raccoons26";
 
 export const roleLabel: Record<Role, string> = {
   student: "Student",
@@ -161,15 +304,28 @@ export function passwordProblem(password: string): string | null {
 }
 
 /**
- * Where a signed-in account belongs — the three roles never share a landing
- * page, and staff wait on an admin before they get one at all.
+ * Where a signed-in account belongs. No two roles share a landing page, and
+ * both kinds of staff wait on someone before they get one at all: a teacher on
+ * their school admin, an admin on a ClubHub owner.
  */
 export function homeFor(
   session: Session | null,
-): "/" | "/clubs" | "/manage" | "/admin" | "/pending" | "/create-school" {
+):
+  | "/"
+  | "/clubs"
+  | "/manage"
+  | "/admin"
+  | "/pending"
+  | "/owner"
+  | "/request-admin"
+  | "/verify-email" {
   if (!session) return "/";
-  if (session.role === "admin" && !session.schoolId) return "/create-school";
+  // Nothing else happens until the address is proven — not even the owner console.
+  if (!session.emailVerified) return "/verify-email";
+  if (session.owner) return "/owner";
   if (session.role === "student") return "/clubs";
+  // An admin has no campus until an owner grants them one.
+  if (session.role === "admin" && !session.schoolId) return "/request-admin";
   if (session.status !== "active") return "/pending";
   return session.role === "admin" ? "/admin" : "/manage";
 }

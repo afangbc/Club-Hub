@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { ClubCategory, Prefs, Role } from "./campus-data";
-import type { AppState, ClubInput, Result } from "@/server/service";
+import { normalizeSchedule, type ClubCategory, type MeetingSchedule, type Prefs, type Role } from "./campus-data";
+import type { AppState, ClubInput, CreateSchoolResult, Result } from "@/server/service";
 
 /**
  * The RPC surface. Every handler defers to `src/server/service` through a
@@ -56,6 +56,20 @@ export const signOutFn = createServerFn({ method: "POST" }).handler(async (): Pr
   return signOut();
 });
 
+export const verifyEmailFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { code: string }) => ({ code: str((d ?? {}).code, 6) }))
+  .handler(async ({ data }): Promise<Result> => {
+    const { verifyEmail } = await import("@/server/service");
+    return verifyEmail(data);
+  });
+
+export const resendVerificationFn = createServerFn({ method: "POST" }).handler(
+  async (): Promise<Result> => {
+    const { resendVerification } = await import("@/server/service");
+    return resendVerification();
+  },
+);
+
 export const joinSchoolFn = createServerFn({ method: "POST" })
   .inputValidator((d: { code: string }) => ({ code: str((d ?? {}).code, 40) }))
   .handler(async ({ data }): Promise<Result> => {
@@ -63,21 +77,45 @@ export const joinSchoolFn = createServerFn({ method: "POST" })
     return joinSchool(data);
   });
 
-export const requestSchoolVerificationFn = createServerFn({ method: "POST" })
+export const createSchoolFn = createServerFn({ method: "POST" })
   .inputValidator((d: { name: string; mascot: string; district: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
-    return { name: str(raw.name, 120), mascot: str(raw.mascot, 80), district: str(raw.district, 120) };
+    return {
+      name: str(raw.name, 120),
+      mascot: str(raw.mascot, 80),
+      district: str(raw.district, 120),
+    };
   })
-  .handler(async ({ data }): Promise<Result> => {
-    const { requestSchoolVerification } = await import("@/server/service");
-    return requestSchoolVerification(data);
-  });
-
-export const createSchoolFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { code: string }) => ({ code: str((d ?? {}).code, 12) }))
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<CreateSchoolResult> => {
     const { createSchool } = await import("@/server/service");
     return createSchool(data);
+  });
+
+export const requestAdminFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { schoolId: string; message: string }) => {
+    const raw = (d ?? {}) as Partial<typeof d>;
+    return { schoolId: str(raw.schoolId, 60), message: str(raw.message, 1000) };
+  })
+  .handler(async ({ data }): Promise<Result> => {
+    const { requestAdmin } = await import("@/server/service");
+    return requestAdmin(data);
+  });
+
+export const reviewAdminRequestFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; approve: boolean }) => {
+    const raw = (d ?? {}) as Partial<typeof d>;
+    return { id: str(raw.id, 60), approve: flag(raw.approve) };
+  })
+  .handler(async ({ data }): Promise<Result> => {
+    const { reviewAdminRequest } = await import("@/server/service");
+    return reviewAdminRequest(data);
+  });
+
+export const revokeAdminFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { userId: string }) => ({ userId: str((d ?? {}).userId, 60) }))
+  .handler(async ({ data }): Promise<Result> => {
+    const { revokeAdmin } = await import("@/server/service");
+    return revokeAdmin(data);
   });
 
 export const updateProfileFn = createServerFn({ method: "POST" })
@@ -161,7 +199,8 @@ function clubInput(raw: Partial<ClubInput>): ClubInput {
     category: str(raw.category, 20) as ClubCategory,
     visibility: raw.visibility === "private" ? "private" : "public",
     room: str(raw.room, 60),
-    meets: str(raw.meets, 80),
+    // Bounds every field of the schedule before it reaches the service.
+    schedule: normalizeSchedule(raw.schedule as Partial<MeetingSchedule> | undefined),
     blurb: str(raw.blurb, 600),
     joinInstructions: str(raw.joinInstructions, 600),
     sponsorId: str(raw.sponsorId, 60),
@@ -185,6 +224,7 @@ export const updateClubFn = createServerFn({ method: "POST" })
     for (const key of Object.keys(patch) as (keyof ClubInput)[]) {
       if (key === "visibility") out.visibility = shaped.visibility;
       else if (key === "category") out.category = shaped.category;
+      else if (key === "schedule") out.schedule = shaped.schedule;
       else out[key] = shaped[key];
     }
     return { id: str(raw.id, 60), patch: out };

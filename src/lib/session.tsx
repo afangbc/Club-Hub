@@ -5,6 +5,7 @@ import {
   createAnnouncementFn,
   createClubFn,
   createEventFn,
+  createSchoolFn,
   deleteAccountFn,
   deleteAnnouncementFn,
   deleteClubFn,
@@ -13,9 +14,13 @@ import {
   joinClubFn,
   joinSchoolFn,
   leaveClubFn,
+  requestAdminFn,
   requestClubFn,
+  resendVerificationFn,
+  reviewAdminRequestFn,
   reviewMembershipFn,
   reviewStaffFn,
+  revokeAdminFn,
   setSchoolCodeFn,
   signInFn,
   signOutFn,
@@ -23,11 +28,13 @@ import {
   updateClubFn,
   updatePrefFn,
   updateProfileFn,
+  verifyEmailFn,
   type AppState,
   type Result,
 } from "./api";
 import {
   defaultPrefs,
+  type AdminRequest,
   type Announcement,
   type Club,
   type ClubEvent,
@@ -35,6 +42,8 @@ import {
   type Prefs,
   type Role,
   type SchoolAccount,
+  type SchoolDetail,
+  type SchoolSummary,
   type Session,
   type StaffAccount,
 } from "./campus-data";
@@ -50,6 +59,12 @@ type State = {
   session: Session | null;
   /** True once the account has entered the campus access code. */
   joined: boolean;
+  /** True for the people who run ClubHub itself. */
+  isOwner: boolean;
+  /** False until the emailed code comes back; gates the whole app. */
+  emailVerified: boolean;
+  /** True in local dev with no mail provider — codes print to the server console. */
+  emailInConsoleMode: boolean;
   prefs: Prefs;
   school: AppState["school"];
   clubs: Club[];
@@ -63,10 +78,18 @@ type State = {
   pendingStaff: StaffAccount[];
   sponsors: StaffAccount[];
   schoolCode: string;
+  schools: SchoolDetail[];
+  adminRequests: AdminRequest[];
+  pendingAdminRequests: AdminRequest[];
+  myAdminRequest: AdminRequest | null;
+  schoolOptions: SchoolSummary[];
+  ownersConfigured: boolean;
   refresh: () => Promise<void>;
   signIn: Action<[string, string]>;
   signUp: Action<[{ name: string; email: string; role: Role; grade: string; password: string }]>;
   signOut: Action<[]>;
+  verifyEmail: Action<[string]>;
+  resendVerification: Action<[]>;
   joinSchool: Action<[string]>;
   updateProfile: Action<[{ name: string; email: string }]>;
   changePassword: Action<[string, string, string]>;
@@ -85,6 +108,14 @@ type State = {
   resolveRequest: Action<[string, boolean]>;
   reviewStaff: Action<[string, boolean]>;
   updateSchoolCode: Action<[string]>;
+  requestAdmin: Action<[{ schoolId: string; message: string }]>;
+  reviewAdminRequest: Action<[string, boolean]>;
+  revokeAdmin: Action<[string]>;
+  createSchool: (input: {
+    name: string;
+    district: string;
+    mascot: string;
+  }) => Promise<{ error: string | null; joinCode?: string | undefined }>;
 };
 
 const emptyState: AppState = {
@@ -100,6 +131,12 @@ const emptyState: AppState = {
   staff: [],
   users: [],
   schoolCode: "",
+  schools: [],
+  adminRequests: [],
+  myAdminRequest: null,
+  schoolOptions: [],
+  ownersConfigured: true,
+  emailInConsoleMode: false,
 };
 
 export const stateQueryKey = ["clubhub", "state"] as const;
@@ -142,6 +179,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       ready: !isPending,
       session: state.user,
       joined: !!state.user?.schoolId,
+      isOwner: !!state.user?.owner,
+      emailVerified: !!state.user?.emailVerified,
+      emailInConsoleMode: state.emailInConsoleMode,
       prefs: state.prefs,
       school: state.school,
       clubs: state.clubs,
@@ -155,11 +195,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       pendingStaff: staff.filter((s) => s.status === "pending"),
       sponsors: staff.filter((s) => s.status === "active"),
       schoolCode: state.schoolCode,
+      schools: state.schools,
+      adminRequests: state.adminRequests,
+      pendingAdminRequests: state.adminRequests.filter((r) => r.status === "pending"),
+      myAdminRequest: state.myAdminRequest,
+      schoolOptions: state.schoolOptions,
+      ownersConfigured: state.ownersConfigured,
       refresh,
 
       signIn: (email, password) => run(() => signInFn({ data: { email, password } })),
       signUp: (input) => run(() => signUpFn({ data: input })),
       signOut: () => run(() => signOutFn()),
+      verifyEmail: (code) => run(() => verifyEmailFn({ data: { code } })),
+      resendVerification: () => run(() => resendVerificationFn()),
       joinSchool: (code) => run(() => joinSchoolFn({ data: { code } })),
       updateProfile: (input) => run(() => updateProfileFn({ data: input })),
       changePassword: (current, next, confirm) =>
@@ -183,6 +231,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       resolveRequest: (id, approve) => run(() => reviewMembershipFn({ data: { id, approve } })),
       reviewStaff: (userId, approve) => run(() => reviewStaffFn({ data: { userId, approve } })),
       updateSchoolCode: (code) => run(() => setSchoolCodeFn({ data: { code } })),
+
+      requestAdmin: (input) => run(() => requestAdminFn({ data: input })),
+      reviewAdminRequest: (id, approve) =>
+        run(() => reviewAdminRequestFn({ data: { id, approve } })),
+      revokeAdmin: (userId) => run(() => revokeAdminFn({ data: { userId } })),
+      // Returns the generated campus code alongside the error, so it can't go
+      // through `run` like the others.
+      createSchool: async (input) => {
+        try {
+          const result = await createSchoolFn({ data: input });
+          await refresh();
+          return result;
+        } catch (error) {
+          console.error(error);
+          return { error: "Couldn't reach the server. Check your connection and try again." };
+        }
+      },
     };
   }, [state, isPending, queryClient]);
 

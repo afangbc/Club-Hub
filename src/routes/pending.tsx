@@ -22,7 +22,9 @@ export const Route = createFileRoute("/pending")({
 function Pending() {
   const { session, ready, signOut, refresh } = useSession();
   const navigate = useNavigate();
-  const waiting = session ? session.role !== "student" && session.status !== "active" : false;
+  const waiting = session
+    ? session.emailVerified && session.role !== "student" && session.status !== "active"
+    : false;
 
   useEffect(() => {
     if (!ready) return;

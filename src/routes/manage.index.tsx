@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ClubForm } from "@/components/ClubForm";
 import type { Club } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
-import { staffClubs } from "@/lib/staff";
+import { campusRooms, staffClubs } from "@/lib/staff";
 
 export const Route = createFileRoute("/manage/")({
   head: () => ({
@@ -57,6 +57,7 @@ function Dashboard() {
             You're listed as the sponsor. Students see it in the directory as soon as you save.
           </p>
           <ClubForm
+            rooms={campusRooms(clubs)}
             submitLabel="Create club"
             onCancel={() => setCreating(false)}
             onSubmit={async (input) => {
@@ -116,6 +117,7 @@ function Dashboard() {
             <ClubEditor
               key={c.id}
               club={c}
+              rooms={campusRooms(clubs)}
               pending={requests.filter((r) => r.clubId === c.id).length}
             />
           ))}
@@ -139,7 +141,7 @@ function Stat({ icon: Icon, label, value }: { icon: typeof Users; label: string;
   );
 }
 
-function ClubEditor({ club, pending }: { club: Club; pending: number }) {
+function ClubEditor({ club, rooms, pending }: { club: Club; rooms: string[]; pending: number }) {
   const { updateClub, deleteClub } = useSession();
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -189,12 +191,13 @@ function ClubEditor({ club, pending }: { club: Club; pending: number }) {
         <div className="mt-3">
           <ClubForm
             key={club.id}
+            rooms={rooms}
             submitLabel="Save changes"
             initial={{
               name: club.name,
               category: club.category,
               visibility: club.visibility,
-              meets: club.meets,
+              schedule: club.schedule,
               room: club.room,
               blurb: club.blurb,
               joinInstructions: club.joinInstructions ?? "",

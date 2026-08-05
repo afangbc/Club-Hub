@@ -2,15 +2,21 @@ import {
   CATEGORIES,
   defaultPrefs,
   emailProblem,
+  formatSchedule,
+  normalizeSchedule,
   passwordProblem,
+  type AdminRequest,
   type Announcement,
   type Club,
   type ClubCategory,
   type ClubEvent,
   type JoinRequest,
+  type MeetingSchedule,
   type Prefs,
   type Role,
   type SchoolAccount,
+  type SchoolDetail,
+  type SchoolSummary,
   type Session,
   type StaffAccount,
 } from "@/lib/campus-data";
@@ -24,8 +30,10 @@ import {
   throttled,
 } from "./auth";
 import { hashPassword, hashToken, newId, verifyPassword } from "./crypto";
-import { sendSchoolVerification } from "./email";
-import type { ClubRecord, Database, UserRecord } from "./schema";
+import { emailInConsoleMode, sendVerificationCode } from "./email";
+import { isBootstrapAdmin, isOwner, ownersConfigured } from "./owners";
+import { FRISCO_SCHOOL_ID } from "./schema";
+import type { AdminRequestRecord, ClubRecord, Database, UserRecord } from "./schema";
 import { getDatabase, transaction } from "./store";
 
 export type Result = { error: string | null };
@@ -54,6 +62,18 @@ export type AppState = {
   users: SchoolAccount[];
   /** Admins only — nobody else is told the live campus code. */
   schoolCode: string;
+  /** Owners only — every campus on the platform. */
+  schools: SchoolDetail[];
+  /** Owners only — the queue of people asking to run a campus. */
+  adminRequests: AdminRequest[];
+  /** The signed-in admin's own request, while they're waiting on an owner. */
+  myAdminRequest: AdminRequest | null;
+  /** Campuses an admin without a school can ask to run. */
+  schoolOptions: SchoolSummary[];
+  /** False when CLUBHUB_OWNER_EMAILS is unset, so setup can't fail silently. */
+  ownersConfigured: boolean;
+  /** True in local dev with no mail provider — codes go to the server console. */
+  emailInConsoleMode: boolean;
 };
 
 // ---------------------------------------------------------------- projections
@@ -66,7 +86,9 @@ function toSession(user: UserRecord): Session {
     role: user.role,
     status: user.status,
     ...(user.grade === undefined ? {} : { grade: user.grade }),
+    emailVerified: user.emailVerified,
     schoolId: user.schoolId,
+    owner: isOwner(user.email),
   };
 }
 
@@ -81,10 +103,36 @@ function toClub(db: Database, club: ClubRecord): Club {
     sponsorName: sponsor?.name ?? "Unassigned",
     sponsorEmail: sponsor?.email ?? "",
     room: club.room,
-    meets: club.meets,
+    schedule: club.schedule,
+    meets: formatSchedule(club.schedule),
     members: db.memberships.filter((m) => m.clubId === club.id && m.status === "member").length,
     blurb: club.blurb,
     ...(club.joinInstructions === undefined ? {} : { joinInstructions: club.joinInstructions }),
+  };
+}
+
+function toAdminRequest(db: Database, record: AdminRequestRecord): AdminRequest {
+  const account = db.users.find((u) => u.id === record.userId);
+  const school = db.schools.find((s) => s.id === record.schoolId);
+  return {
+    id: record.id,
+    schoolId: record.schoolId,
+    schoolName: school?.name ?? "A deleted school",
+    name: account?.name ?? "Deleted account",
+    email: account?.email ?? "",
+    message: record.message,
+    status: record.status,
+    createdAt: record.createdAt,
+    ...(record.decidedAt === undefined ? {} : { decidedAt: record.decidedAt }),
+  };
+}
+
+function toSchoolSummary(school: Database["schools"][number]): SchoolSummary {
+  return {
+    id: school.id,
+    name: school.name,
+    district: school.district,
+    mascot: school.mascot,
   };
 }
 
@@ -107,9 +155,25 @@ async function requireEnrolled(): Promise<
 > {
   const user = await currentUser();
   if (!user) return { user: null, error: "You're signed out. Sign in and try again." };
+  if (!user.emailVerified) return { user: null, error: "Confirm your email address first." };
   if (!user.schoolId) return { user: null, error: "Enter your campus access code first." };
   if (user.role !== "student" && user.status !== "active")
     return { user: null, error: "A school admin hasn't approved this account yet." };
+  return { user, error: null };
+}
+
+/**
+ * The gate on everything only the people running ClubHub may do. It re-reads the
+ * environment allowlist rather than trusting anything on the account, so this
+ * cannot be reached by editing a record or replaying a stale session.
+ */
+async function requireOwner(): Promise<
+  { user: UserRecord; error: null } | { user: null; error: string }
+> {
+  const user = await currentUser();
+  if (!user) return { user: null, error: "You're signed out. Sign in and try again." };
+  if (!user.emailVerified) return { user: null, error: "Confirm your email address first." };
+  if (!isOwner(user.email)) return { user: null, error: "Only a ClubHub owner can do that." };
   return { user, error: null };
 }
 
@@ -132,11 +196,53 @@ export async function loadState(): Promise<AppState> {
     staff: [],
     users: [],
     schoolCode: "",
+    schools: [],
+    adminRequests: [],
+    myAdminRequest: null,
+    schoolOptions: [],
+    ownersConfigured: ownersConfigured(),
+    emailInConsoleMode: emailInConsoleMode(),
   };
 
-  // Not signed in, or signed in but not through the campus code screen yet.
-  const school = db.schools.find((candidate) => candidate.id === user?.schoolId);
-  if (!user || !school) return empty;
+  // An unconfirmed address sees nothing but its own status.
+  if (!user || !user.emailVerified) return empty;
+
+  // Owners work above the schools: the request queue and the campus list, not a
+  // club directory. They never belong to a campus themselves.
+  if (isOwner(user.email)) {
+    return {
+      ...empty,
+      schools: db.schools.map((school) => ({
+        ...toSchoolSummary(school),
+        joinCode: school.joinCode,
+        admins: db.users.filter(
+          (u) => u.schoolId === school.id && u.role === "admin" && u.status === "active",
+        ).length,
+        students: db.users.filter((u) => u.schoolId === school.id && u.role === "student").length,
+        clubs: db.clubs.filter((c) => c.schoolId === school.id).length,
+      })),
+      adminRequests: db.adminRequests
+        .map((record) => toAdminRequest(db, record))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    };
+  }
+
+  // An admin with no campus is waiting on an owner — give them the school list
+  // to pick from and whatever they've already submitted.
+  if (user.role === "admin" && !user.schoolId) {
+    const mine = db.adminRequests
+      .filter((r) => r.userId === user.id)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    return {
+      ...empty,
+      schoolOptions: db.schools.map(toSchoolSummary),
+      myAdminRequest: mine ? toAdminRequest(db, mine) : null,
+    };
+  }
+
+  // Signed in, but not through the campus code screen yet.
+  const school = db.schools.find((candidate) => candidate.id === user.schoolId);
+  if (!school) return empty;
   // Staff waiting on approval get their own status back and nothing else.
   if (user.role !== "student" && user.status !== "active") return empty;
 
@@ -194,6 +300,7 @@ export async function loadState(): Promise<AppState> {
     : [];
 
   return {
+    ...empty,
     user: toSession(user),
     prefs: user.prefs,
     school: { name: school.name, mascot: school.mascot, district: school.district },
@@ -234,8 +341,13 @@ export async function signUp(input: {
   const roles: Role[] = ["student", "teacher", "admin"];
   if (!roles.includes(input.role)) return fail("Pick a role.");
 
-  const emailError = emailProblem(email, input.role);
-  if (emailError) return fail(emailError);
+  // Owners and the bootstrap admin are named in the environment rather than by a
+  // school mailbox, so the campus domain rules don't apply to them.
+  const privileged = isOwner(email) || isBootstrapAdmin(email);
+  if (!privileged) {
+    const emailError = emailProblem(email, input.role);
+    if (emailError) return fail(emailError);
+  }
 
   const passwordError = passwordProblem(input.password);
   if (passwordError) return fail(passwordError);
@@ -244,15 +356,24 @@ export async function signUp(input: {
 
   const created = await transaction((db) => {
     if (db.users.some((u) => norm(u.email) === norm(email))) return null;
+
+    // The bootstrap admin skips the request queue and lands on the default
+    // campus already active — that's the point of the variable.
+    const bootstrap = isBootstrapAdmin(email);
+    const defaultSchool =
+      db.schools.find((s) => s.id === FRISCO_SCHOOL_ID) ?? db.schools[0] ?? null;
+
     const user: UserRecord = {
       id: newId("usr"),
       name,
       email,
-      role: input.role,
-      // Staff wait on an admin; students are in as soon as they have the code.
-      status: input.role === "student" ? "active" : "pending",
+      role: bootstrap ? "admin" : input.role,
+      // Staff wait: teachers on a school admin, admins on a ClubHub owner.
+      // Students are in as soon as they have the campus code.
+      status: input.role === "student" || privileged ? "active" : "pending",
       passwordHash,
-      schoolId: null,
+      emailVerified: false,
+      schoolId: bootstrap ? (defaultSchool?.id ?? null) : null,
       ...(input.role === "student" && input.grade ? { grade: input.grade } : {}),
       prefs: { ...defaultPrefs },
       createdAt: new Date().toISOString(),
@@ -263,7 +384,83 @@ export async function signUp(input: {
 
   if (!created) return fail("An account with that email already exists. Sign in instead.");
   await startSession(created.id);
+  // The account exists either way; a delivery failure is recoverable from the
+  // confirmation screen's resend button.
+  return issueVerificationCode(created);
+}
+
+// --------------------------------------------------------- email verification
+
+const CODE_TTL_MS = 10 * 60_000;
+const RESEND_COOLDOWN_MS = 60_000;
+const MAX_CODE_ATTEMPTS = 5;
+
+function sixDigitCode(): string {
+  const bytes = crypto.getRandomValues(new Uint32Array(1));
+  return String(100000 + ((bytes[0] ?? 0) % 900000));
+}
+
+/** Mails a fresh code and replaces whatever was outstanding for the account. */
+async function issueVerificationCode(user: UserRecord): Promise<Result> {
+  const code = sixDigitCode();
+  const codeHash = await hashToken(code);
+
+  try {
+    await sendVerificationCode(user.email, code);
+  } catch (error) {
+    console.error("[clubhub] Verification email failed", error);
+    return fail("We couldn't send the confirmation email. Try again in a moment.");
+  }
+
+  await transaction((db) => {
+    db.emailVerifications = db.emailVerifications.filter((item) => item.userId !== user.id);
+    db.emailVerifications.push({
+      userId: user.id,
+      email: norm(user.email),
+      codeHash,
+      expiresAt: new Date(Date.now() + CODE_TTL_MS).toISOString(),
+      sentAt: new Date().toISOString(),
+      attempts: 0,
+    });
+  });
   return ok;
+}
+
+export async function resendVerification(): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return fail("You're signed out. Sign in and try again.");
+  if (user.emailVerified) return ok;
+
+  const existing = (await getDatabase()).emailVerifications.find((i) => i.userId === user.id);
+  if (existing && Date.now() - Date.parse(existing.sentAt) < RESEND_COOLDOWN_MS)
+    return fail("Wait a minute before asking for another code.");
+
+  return issueVerificationCode(user);
+}
+
+export async function verifyEmail(input: { code: string }): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return fail("You're signed out. Sign in and try again.");
+  if (user.emailVerified) return ok;
+
+  const codeHash = await hashToken(input.code.trim());
+
+  return transaction((db) => {
+    const record = db.emailVerifications.find((item) => item.userId === user.id);
+    if (!record) return fail("That code expired. Ask for a new one.");
+    if (record.email !== norm(user.email)) return fail("Your email changed. Ask for a new code.");
+    if (Date.parse(record.expiresAt) < Date.now()) return fail("That code expired. Ask for a new one.");
+    if (record.attempts >= MAX_CODE_ATTEMPTS) return fail("Too many tries. Ask for a new code.");
+
+    record.attempts += 1;
+    if (codeHash !== record.codeHash) return fail("That code isn't right.");
+
+    const account = db.users.find((u) => u.id === user.id);
+    if (!account) return fail("Account not found.");
+    account.emailVerified = true;
+    db.emailVerifications = db.emailVerifications.filter((item) => item.userId !== user.id);
+    return ok;
+  });
 }
 
 export async function signIn(input: { email: string; password: string }): Promise<Result> {
@@ -301,6 +498,7 @@ export async function signOut(): Promise<Result> {
 export async function joinSchool(input: { code: string }): Promise<Result> {
   const user = await currentUser();
   if (!user) return fail("You're signed out. Sign in and try again.");
+  if (!user.emailVerified) return fail("Confirm your email address first.");
 
   const db = await getDatabase();
   const school = db.schools.find((candidate) => norm(candidate.joinCode) === norm(input.code));
@@ -314,6 +512,8 @@ export async function joinSchool(input: { code: string }): Promise<Result> {
   return ok;
 }
 
+// ------------------------------------------------------- owner administration
+
 type SchoolSetupInput = { name: string; mascot: string; district: string };
 
 function validateSchoolSetup(input: SchoolSetupInput): string | null {
@@ -323,81 +523,127 @@ function validateSchoolSetup(input: SchoolSetupInput): string | null {
   return null;
 }
 
-function verificationCode(): string {
-  const bytes = crypto.getRandomValues(new Uint32Array(1));
-  return String(100000 + ((bytes[0] ?? 0) % 900000));
-}
-
 function schoolCode(name: string): string {
   const prefix = name.replace(/[^a-z0-9]/gi, "").slice(0, 5).toUpperCase() || "SCHOOL";
   const bytes = crypto.getRandomValues(new Uint32Array(1));
   return `${prefix}-${String((bytes[0] ?? 0) % 10000).padStart(4, "0")}`;
 }
 
-export async function requestSchoolVerification(input: SchoolSetupInput): Promise<Result> {
-  const user = await currentUser();
-  if (!user) return fail("You're signed out. Sign in and try again.");
-  if (user.role !== "admin") return fail("Only a school admin can create a school.");
-  if (user.schoolId) return fail("Your account already belongs to a school.");
+export type CreateSchoolResult = Result & { joinCode?: string };
+
+/**
+ * Only a ClubHub owner adds a campus. Nobody can sign up and hand themselves a
+ * school any more — that was the same thing as handing yourself an admin
+ * account.
+ */
+export async function createSchool(input: SchoolSetupInput): Promise<CreateSchoolResult> {
+  const { user, error } = await requireOwner();
+  if (!user) return fail(error);
+
   const problem = validateSchoolSetup(input);
   if (problem) return fail(problem);
 
-  const existing = (await getDatabase()).schoolVerifications.find((item) => item.userId === user.id);
-  if (existing && Date.now() - Date.parse(existing.sentAt) < 60_000)
-    return fail("Wait one minute before requesting another code.");
+  return transaction((db): CreateSchoolResult => {
+    const name = input.name.trim();
+    if (db.schools.some((school) => norm(school.name) === norm(name)))
+      return fail("A school with that name already exists.");
 
-  const code = verificationCode();
-  try {
-    await sendSchoolVerification(user.email, code);
-  } catch (error) {
-    console.error("[clubhub] Verification email failed", error);
-    return fail("We couldn't send the verification email. Ask the site owner to check email settings.");
-  }
+    let joinCode = schoolCode(name);
+    while (db.schools.some((school) => norm(school.joinCode) === norm(joinCode)))
+      joinCode = schoolCode(name);
 
-  await transaction(async (db) => {
-    db.schoolVerifications = db.schoolVerifications.filter((item) => item.userId !== user.id);
-    db.schoolVerifications.push({
-      userId: user.id,
-      email: norm(user.email),
-      codeHash: await hashToken(code),
-      expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
-      sentAt: new Date().toISOString(),
-      attempts: 0,
-      schoolName: input.name.trim(),
+    db.schools.push({
+      id: newId("sch"),
+      name,
       mascot: input.mascot.trim(),
       district: input.district.trim(),
+      joinCode,
     });
+    return { error: null, joinCode };
   });
-  return ok;
 }
 
-export type CreateSchoolResult = Result & { joinCode?: string };
-
-export async function createSchool(input: { code: string }): Promise<CreateSchoolResult> {
+/**
+ * How somebody becomes a school admin: they ask, and an owner decides. The
+ * request carries no privilege on its own — approval is what moves the account
+ * onto a campus.
+ */
+export async function requestAdmin(input: { schoolId: string; message: string }): Promise<Result> {
   const user = await currentUser();
   if (!user) return fail("You're signed out. Sign in and try again.");
-  if (user.role !== "admin") return fail("Only a school admin can create a school.");
-  if (user.schoolId) return fail("Your account already belongs to a school.");
+  if (!user.emailVerified) return fail("Confirm your email address first.");
+  if (user.role !== "admin")
+    return fail("Only an account created as a school admin can request a campus.");
+  if (user.schoolId) return fail("Your account already runs a campus.");
 
-  return transaction(async (db): Promise<CreateSchoolResult> => {
-    const verification = db.schoolVerifications.find((item) => item.userId === user.id);
-    if (!verification || verification.email !== norm(user.email)) return fail("Request a new verification code.");
-    if (Date.parse(verification.expiresAt) < Date.now()) return fail("That code expired. Request a new one.");
-    if (verification.attempts >= 5) return fail("Too many attempts. Request a new code.");
-    verification.attempts += 1;
-    if ((await hashToken(input.code.trim())) !== verification.codeHash) return fail("That verification code is incorrect.");
+  const message = input.message.trim();
+  if (message.length < 20)
+    return fail("Tell us who you are at the school and why you should run it — at least a sentence.");
 
-    let joinCode = schoolCode(verification.schoolName);
-    while (db.schools.some((school) => norm(school.joinCode) === norm(joinCode)))
-      joinCode = schoolCode(verification.schoolName);
-    const id = newId("sch");
-    db.schools.push({ id, name: verification.schoolName, mascot: verification.mascot, district: verification.district, joinCode });
-    const record = db.users.find((candidate) => candidate.id === user.id);
-    if (!record) return fail("Account not found.");
-    record.schoolId = id;
-    record.status = "active";
-    db.schoolVerifications = db.schoolVerifications.filter((item) => item.userId !== user.id);
-    return { error: null, joinCode };
+  return transaction((db) => {
+    const school = db.schools.find((candidate) => candidate.id === input.schoolId);
+    if (!school) return fail("Pick a school.");
+    if (db.adminRequests.some((r) => r.userId === user.id && r.status === "pending"))
+      return fail("You already have a request waiting on a ClubHub owner.");
+
+    db.adminRequests.push({
+      id: newId("adm"),
+      userId: user.id,
+      schoolId: school.id,
+      message: message.slice(0, 1000),
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    });
+    return ok;
+  });
+}
+
+export async function reviewAdminRequest(input: { id: string; approve: boolean }): Promise<Result> {
+  const { user, error } = await requireOwner();
+  if (!user) return fail(error);
+
+  return transaction((db) => {
+    const request = db.adminRequests.find((r) => r.id === input.id);
+    if (!request) return fail("That request no longer exists.");
+    if (request.status !== "pending") return fail("That request was already decided.");
+
+    const account = db.users.find((u) => u.id === request.userId);
+    if (!account) return fail("That account was deleted.");
+    const school = db.schools.find((s) => s.id === request.schoolId);
+    if (!school) return fail("That school was deleted.");
+
+    request.status = input.approve ? "approved" : "denied";
+    request.decidedAt = new Date().toISOString();
+    request.decidedBy = user.id;
+
+    if (input.approve) {
+      account.role = "admin";
+      account.status = "active";
+      account.schoolId = school.id;
+    } else {
+      account.status = "denied";
+      // A rejected applicant shouldn't keep a live session.
+      db.sessions = db.sessions.filter((s) => s.userId !== account.id);
+    }
+    return ok;
+  });
+}
+
+/** Takes a campus away from an admin without deleting their account. */
+export async function revokeAdmin(input: { userId: string }): Promise<Result> {
+  const { user, error } = await requireOwner();
+  if (!user) return fail(error);
+
+  return transaction((db) => {
+    const account = db.users.find((u) => u.id === input.userId);
+    if (!account) return fail("That account no longer exists.");
+    if (account.role !== "admin") return fail("That account isn't a school admin.");
+    if (isOwner(account.email)) return fail("Owners are set in the environment, not here.");
+
+    account.status = "denied";
+    account.schoolId = null;
+    db.sessions = db.sessions.filter((s) => s.userId !== account.id);
+    return ok;
   });
 }
 
@@ -411,18 +657,30 @@ export async function updateProfile(input: { name: string; email: string }): Pro
   const email = input.email.trim();
   if (!name) return fail("Name can't be empty.");
 
-  const emailError = emailProblem(email, user.role);
-  if (emailError) return fail(emailError);
+  if (!isOwner(email) && !isBootstrapAdmin(email)) {
+    const emailError = emailProblem(email, user.role);
+    if (emailError) return fail(emailError);
+  }
 
-  return transaction((db) => {
+  const changedEmail = norm(email) !== norm(user.email);
+
+  const result = await transaction((db) => {
     if (db.users.some((u) => u.id !== user.id && norm(u.email) === norm(email)))
       return fail("Another account already uses that email.");
     const record = db.users.find((u) => u.id === user.id);
     if (!record) return fail("Account not found.");
     record.name = name;
     record.email = email;
+    // A new address is unproven, whatever the old one was.
+    if (changedEmail) {
+      record.emailVerified = false;
+      db.emailVerifications = db.emailVerifications.filter((item) => item.userId !== user.id);
+    }
     return ok;
   });
+
+  if (result.error || !changedEmail) return result;
+  return issueVerificationCode({ ...user, email });
 }
 
 export async function changePassword(input: {
@@ -567,7 +825,7 @@ export type ClubInput = {
   category: ClubCategory;
   visibility: "public" | "private";
   room: string;
-  meets: string;
+  schedule: MeetingSchedule;
   blurb: string;
   joinInstructions: string;
   /** Admins may hand a new club straight to a sponsor; teachers always get themselves. */
@@ -579,8 +837,7 @@ function validateClubInput(input: ClubInput): string | null {
   if (input.name.trim().length > 80) return "Club names have to be under 80 characters.";
   if (!CATEGORIES.includes(input.category)) return "Pick a category.";
   if (input.visibility !== "public" && input.visibility !== "private") return "Pick who can join.";
-  if (!input.meets.trim() || !input.room.trim())
-    return "Add a meeting time and a room so students know where to show up.";
+  if (!input.room.trim()) return "Add a room so students know where to show up.";
   return null;
 }
 
@@ -613,7 +870,7 @@ export async function createClub(input: ClubInput): Promise<Result> {
       visibility: input.visibility,
       sponsorId,
       room: input.room.trim(),
-      meets: input.meets.trim(),
+      schedule: normalizeSchedule(input.schedule),
       blurb: input.blurb.trim(),
       ...(input.joinInstructions.trim() ? { joinInstructions: input.joinInstructions.trim() } : {}),
       createdAt: new Date().toISOString(),
@@ -657,7 +914,7 @@ export async function updateClub(input: {
       club.visibility = patch.visibility;
     }
     if (patch.room !== undefined) club.room = patch.room.trim();
-    if (patch.meets !== undefined) club.meets = patch.meets.trim();
+    if (patch.schedule !== undefined) club.schedule = normalizeSchedule(patch.schedule);
     if (patch.blurb !== undefined) club.blurb = patch.blurb.trim();
     if (patch.joinInstructions !== undefined) {
       const text = patch.joinInstructions.trim();
@@ -708,6 +965,11 @@ export async function createEvent(input: {
     return fail("Pick a club and fill in title, date, and location.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return fail("Pick a valid date.");
 
+  const clock = /^([01]\d|2[0-3]):[0-5]\d$/;
+  const start = clock.test(input.start) ? input.start : "16:00";
+  const end = clock.test(input.end) ? input.end : "17:00";
+  if (end <= start) return fail("The meeting has to end after it starts.");
+
   return transaction((db) => {
     const club = db.clubs.find((c) => c.id === input.clubId);
     if (!club) return fail("Pick a club.");
@@ -718,8 +980,8 @@ export async function createEvent(input: {
       clubId: club.id,
       title: input.title.trim(),
       date: input.date,
-      start: input.start.trim() || "4:00 PM",
-      end: input.end.trim() || "5:00 PM",
+      start,
+      end,
       location: input.location.trim(),
     });
     return ok;
