@@ -287,11 +287,13 @@ export async function loadState(): Promise<AppState> {
 
   const manageable = clubs.filter((c) => canManage(user, c));
   const manageableIds = new Set(manageable.map((c) => c.id));
+  const schoolClubIds = new Set(clubs.map((club) => club.id));
 
   const visibleAnnouncements = db.announcements.filter((a) => {
     if (a.teamId) return visibleTeamIds.has(a.teamId);
+    if (!a.clubId || !schoolClubIds.has(a.clubId)) return false;
     if (user.role === "admin") return true;
-    return !!a.clubId && (myClubIds.includes(a.clubId) || manageableIds.has(a.clubId));
+    return myClubIds.includes(a.clubId) || manageableIds.has(a.clubId);
   });
 
   const requests: JoinRequest[] = db.memberships
