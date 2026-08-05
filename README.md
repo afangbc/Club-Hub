@@ -1,6 +1,6 @@
 # ClubHub
 
-club-hub-self.vercel.app
+https://club-hub-self.vercel.app
 
 > **One app to rule them all.**
 
