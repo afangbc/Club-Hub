@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { DEMO_PASSWORD, GRADES, SCHOOL, homeFor, type Role } from "@/lib/campus-data";
+import { DEMO_PASSWORD, GRADES, homeFor, type Role } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/")({
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "ClubHub puts every club, team, and meeting at Frisco High School in one place: directory, joining, and a shared calendar.",
+          "ClubHub puts every school's clubs, teams, announcements, and events in one organized place.",
       },
       { property: "og:title", content: "ClubHub — One club app for your whole campus" },
       {
@@ -29,9 +29,9 @@ const roles: { value: Role; label: string; hint: string }[] = [
 ];
 
 const demoLogins = [
-  { role: "Student", email: `jordan.rivera.123@${SCHOOL.studentDomain}` },
-  { role: "Teacher", email: `marcus.alvarez@${SCHOOL.staffDomain}` },
-  { role: "Admin", email: `alicia.nguyen@${SCHOOL.staffDomain}` },
+  { role: "Student", email: "student@demo.clubhub.app" },
+  { role: "Teacher", email: "teacher@demo.clubhub.app" },
+  { role: "Admin", email: "admin@demo.clubhub.app" },
 ];
 
 function Index() {
@@ -62,17 +62,14 @@ function Index() {
   }, [ready, session, joined, destination, navigate]);
 
   const step: 1 | 2 = session ? 2 : 1;
-  const placeholder =
-    role === "student"
-      ? `jordan.rivera.123@${SCHOOL.studentDomain}`
-      : `first.last@${SCHOOL.staffDomain}`;
+  const placeholder = role === "student" ? "student@school.edu" : "first.last@district.org";
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <section className="relative flex flex-col justify-between bg-primary px-8 py-12 text-primary-foreground lg:px-14">
         <div className="flex items-center gap-3">
           <span className="grid size-10 place-items-center rounded-lg bg-brand font-display text-2xl text-brand-foreground">
-            F
+            C
           </span>
           <span className="font-display text-3xl">ClubHub</span>
         </div>
@@ -83,7 +80,7 @@ function Index() {
           </h1>
           <p className="mt-5 text-base opacity-80">
             No more juggling a different app for every club just to find out where a meeting is.
-            Every club, team, and tutorial at {SCHOOL.name} — one directory, one calendar.
+            Every club, team, announcement, and event at your school — one place, built for every campus.
           </p>
           <ul className="mt-8 space-y-3 text-sm opacity-90">
             {[
@@ -98,9 +95,7 @@ function Index() {
             ))}
           </ul>
         </div>
-        <p className="text-xs uppercase tracking-[0.2em] opacity-60">
-          {SCHOOL.mascot} · {SCHOOL.district}
-        </p>
+        <p className="text-xs uppercase tracking-[0.2em] opacity-60">Built for every school</p>
       </section>
 
       <section className="flex items-center justify-center px-6 py-12">
@@ -267,7 +262,7 @@ function Index() {
                         }}
                         className="rounded-md px-2 py-1.5 text-left text-xs text-secondary-foreground hover:bg-background"
                       >
-                        <span className="font-semibold">{demo.role}</span> — {demo.email}
+                        <span className="font-semibold">Use {demo.role.toLowerCase()} demo</span>
                       </button>
                     ))}
                   </div>
@@ -291,8 +286,8 @@ function Index() {
             >
               <h2 className="text-3xl">Join your school</h2>
               <p className="text-sm text-muted-foreground">
-                Enter the access code {SCHOOL.name} gave you. It locks ClubHub to this campus only —
-                you'll never see clubs from another {SCHOOL.district} school.
+                Enter the access code your school gave you. It connects your account only to that
+                campus, so you never see clubs or teams from another school.
               </p>
               <Field
                 label="School access code"

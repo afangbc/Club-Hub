@@ -69,7 +69,7 @@
 
 :root {
   --radius: 0.5rem;
-  /* Frisco High School Raccoons: royal blue + school gold */
+  /* ClubHub's campus-neutral public identity: deep indigo + electric teal. */
   --background: oklch(0.976 0.011 250);
   --foreground: oklch(0.21 0.055 264);
   --surface: oklch(0.995 0.004 250);
@@ -77,22 +77,22 @@
   --card-foreground: oklch(0.21 0.055 264);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.21 0.055 264);
-  --primary: oklch(0.42 0.175 264);
-  --primary-foreground: oklch(0.99 0.012 100);
-  --brand: oklch(0.845 0.155 89);
-  --brand-foreground: oklch(0.25 0.075 264);
+  --primary: #243b80;
+  --primary-foreground: #f8fafc;
+  --brand: #2dd4bf;
+  --brand-foreground: #102a2b;
   --secondary: oklch(0.945 0.018 250);
   --secondary-foreground: oklch(0.35 0.13 264);
   --muted: oklch(0.945 0.018 250);
   --muted-foreground: oklch(0.52 0.035 258);
-  --accent: oklch(0.935 0.065 92);
-  --accent-foreground: oklch(0.32 0.11 264);
+  --accent: #ccfbf1;
+  --accent-foreground: #134e4a;
   --success: oklch(0.6 0.13 155);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(0.895 0.019 255);
   --input: oklch(0.895 0.019 255);
-  --ring: oklch(0.42 0.175 264);
+  --ring: #243b80;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -130,9 +130,8 @@ body::-webkit-scrollbar {
   --card-foreground: oklch(0.984 0.003 247.858);
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
-  /* Branded blue panels keep their original blue-and-white treatment. */
-  --primary: oklch(0.42 0.175 264);
-  --primary-foreground: oklch(0.99 0.012 100);
+  --primary: #243b80;
+  --primary-foreground: #f8fafc;
   --secondary: oklch(0.279 0.041 260.031);
   --secondary-foreground: oklch(0.984 0.003 247.858);
   --muted: oklch(0.279 0.041 260.031);

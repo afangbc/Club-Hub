@@ -11,7 +11,7 @@ import {
 } from "@/lib/campus-data";
 import { hashPassword } from "./crypto";
 
-export const DB_VERSION = 8;
+export const DB_VERSION = 9;
 
 export type SchoolRecord = {
   id: string;
@@ -191,17 +191,17 @@ export async function buildSeedDatabase(): Promise<Database> {
       },
     ],
     users: [
-      { id: "u-nguyen", name: "Alicia Nguyen", email: `alicia.nguyen@${SCHOOL.staffDomain}`, role: "admin", status: "active", passwordHash, emailVerified: true, schoolId: FRISCO_SCHOOL_ID, department: "Assistant Principal · Student Activities", prefs: { ...defaultPrefs }, createdAt },
-      { id: "u-alvarez", name: "Marcus Alvarez", email: `marcus.alvarez@${SCHOOL.staffDomain}`, role: "teacher", status: "active", passwordHash, emailVerified: true, schoolId: FRISCO_SCHOOL_ID, department: "Career & Technical Education", prefs: { ...defaultPrefs }, createdAt },
+      { id: "u-nguyen", name: "Alicia Nguyen", email: "admin@demo.clubhub.app", role: "admin", status: "active", passwordHash, emailVerified: true, schoolId: FRISCO_SCHOOL_ID, department: "Assistant Principal · Student Activities", prefs: { ...defaultPrefs }, createdAt },
+      { id: "u-alvarez", name: "Marcus Alvarez", email: "teacher@demo.clubhub.app", role: "teacher", status: "active", passwordHash, emailVerified: true, schoolId: FRISCO_SCHOOL_ID, department: "Career & Technical Education", prefs: { ...defaultPrefs }, createdAt },
       { id: "u-whitfield", name: "Dana Whitfield", email: `dana.whitfield@${SCHOOL.staffDomain}`, role: "teacher", status: "active", passwordHash, emailVerified: true, schoolId: FRISCO_SCHOOL_ID, department: "Social Studies", prefs: { ...defaultPrefs }, createdAt },
       { id: "u-raman", name: "Priya Raman", email: `priya.raman@${SCHOOL.staffDomain}`, role: "teacher", status: "pending", passwordHash, emailVerified: true, schoolId: FRISCO_SCHOOL_ID, department: "Science", note: "Wants to sponsor Science Olympiad this fall.", prefs: { ...defaultPrefs }, createdAt },
       ...[
-        ["u-rivera", "Jordan Rivera", "jordan.rivera.123", "11th"],
+        ["u-rivera", "Jordan Rivera", "student", "11th"],
         ["u-fitzgerald", "Maya Fitzgerald", "maya.fitzgerald.204", "11th"],
         ["u-park", "Devin Park", "devin.park.088", "12th"],
         ["u-brooks", "Aaliyah Brooks", "aaliyah.brooks.317", "10th"],
         ["u-iqbal", "Sana Iqbal", "sana.iqbal.529", "9th"],
-      ].map(([id, name, handle, grade]) => ({ id: id!, name: name!, email: `${handle}@${SCHOOL.studentDomain}`, role: "student" as const, status: "active" as const, passwordHash, emailVerified: true, schoolId: FRISCO_SCHOOL_ID, grade: grade!, prefs: { ...defaultPrefs }, createdAt })),
+      ].map(([id, name, handle, grade]) => ({ id: id!, name: name!, email: id === "u-rivera" ? "student@demo.clubhub.app" : `${handle}@${SCHOOL.studentDomain}`, role: "student" as const, status: "active" as const, passwordHash, emailVerified: true, schoolId: FRISCO_SCHOOL_ID, grade: grade!, prefs: { ...defaultPrefs }, createdAt })),
     ],
     clubs: [
       { id: "c-tsa", schoolId: FRISCO_SCHOOL_ID, name: "Technology Student Association", category: "STEM", visibility: "public", sponsorId: "u-alvarez", room: "C-214", schedule: { frequency: "weekly", weekday: 2, week: 1, hour: 16, minute: 15 }, blurb: "Compete in engineering, coding, and design events at region and state.", createdAt },

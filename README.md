@@ -220,9 +220,9 @@ The seeded accounts below all use the password `raccoons26`:
 
 | Role | Email |
 | --- | --- |
-| Student | `jordan.rivera.123@k12.friscoisd.org` |
-| Teacher | `marcus.alvarez@friscoisd.org` |
-| School admin | `alicia.nguyen@friscoisd.org` |
+| Student | `student@demo.clubhub.app` |
+| Teacher | `teacher@demo.clubhub.app` |
+| School admin | `admin@demo.clubhub.app` |
 
 Upgrading an empty version-4 database restores this demo automatically. A
 database containing real users or clubs is never replaced with sample data.
