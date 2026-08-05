@@ -202,7 +202,11 @@ function ClubEditor({ club, rooms, pending }: { club: Club; rooms: string[]; pen
               blurb: club.blurb,
               joinInstructions: club.joinInstructions ?? "",
             }}
-            onSubmit={(input) => updateClub(club.id, input)}
+            onSubmit={async (input) => {
+              const problem = await updateClub(club.id, input);
+              if (!problem) setOpen(false);
+              return problem;
+            }}
           />
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {confirmDelete ? (
