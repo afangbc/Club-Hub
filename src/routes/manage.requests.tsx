@@ -22,17 +22,30 @@ export const Route = createFileRoute("/manage/requests")({
 function Requests() {
   const { session, clubs, requests, resolveRequest } = useSession();
   const [error, setError] = useState("");
+  const [exiting, setExiting] = useState<Set<string>>(() => new Set());
   if (!session) return null;
 
   const ids = staffClubs(clubs, session).map((c) => c.id);
   const list = requests.filter((r) => ids.includes(r.clubId));
 
   const resolve = async (id: string, approve: boolean) => {
-    setError((await resolveRequest(id, approve)) ?? "");
+    if (approve) {
+      setExiting((current) => new Set(current).add(id));
+      await new Promise((done) => window.setTimeout(done, 300));
+    }
+    const problem = await resolveRequest(id, approve);
+    setError(problem ?? "");
+    if (problem) {
+      setExiting((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    }
   };
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl overflow-x-hidden">
       <h1 className="text-4xl">Join Requests</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Students who followed the instructions on a private club you sponsor and are waiting on you.
@@ -48,7 +61,12 @@ function Requests() {
           {list.map((r) => {
             const club = clubs.find((c) => c.id === r.clubId);
             return (
-              <li key={r.id} className="card-surface flex flex-wrap items-center gap-4 p-4">
+              <li
+                key={r.id}
+                className={`card-surface flex flex-wrap items-center gap-4 p-4 transition-[transform,opacity] duration-300 ease-in ${
+                  exiting.has(r.id) ? "translate-x-[110%] opacity-0" : "translate-x-0 opacity-100"
+                }`}
+              >
                 <div className="min-w-52 flex-1">
                   <p className="text-lg font-semibold leading-tight">{r.studentName}</p>
                   <p className="text-xs text-muted-foreground">
@@ -62,12 +80,14 @@ function Requests() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => void resolve(r.id, true)}
+                    disabled={exiting.has(r.id)}
                     className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
                   >
                     <Check className="size-4" /> Approve
                   </button>
                   <button
                     onClick={() => void resolve(r.id, false)}
+                    disabled={exiting.has(r.id)}
                     className="flex items-center gap-1.5 rounded-md border border-input px-3 py-2 text-sm font-semibold hover:bg-secondary"
                   >
                     <X className="size-4" /> Decline

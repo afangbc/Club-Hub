@@ -187,8 +187,14 @@ function ClubEditor({ club, rooms, pending }: { club: Club; rooms: string[]; pen
         {open ? "Close settings" : "Edit club settings"}
       </button>
 
-      {open && (
-        <div className="mt-3">
+      <div
+        aria-hidden={!open}
+        inert={!open}
+        className={`grid transition-[grid-template-rows,opacity,margin] duration-300 ease-out ${
+          open ? "mt-3 grid-rows-[1fr] opacity-100" : "mt-0 grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
           <ClubForm
             key={club.id}
             rooms={rooms}
@@ -234,7 +240,7 @@ function ClubEditor({ club, rooms, pending }: { club: Club; rooms: string[]; pen
             )}
           </div>
         </div>
-      )}
+      </div>
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
     </article>
   );
