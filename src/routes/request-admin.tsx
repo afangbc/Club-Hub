@@ -61,7 +61,14 @@ function StatusIcon({ kind }: { kind: "waiting" | "denied" | "new" }) {
   return <span className={`mx-auto grid size-14 place-items-center rounded-full ${kind === "denied" ? "bg-destructive/10 text-destructive" : "bg-accent text-accent-foreground"}`}><Icon className="size-7" /></span>;
 }
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return <label className="block"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span><span className="mt-1 flex items-center gap-2 rounded-md border border-input bg-card p-2"><input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-8 w-12 cursor-pointer border-0 bg-transparent" /><code className="text-xs uppercase">{value}</code></span></label>;
+  const [hex, setHex] = useState(value.toUpperCase());
+  useEffect(() => setHex(value.toUpperCase()), [value]);
+  const updateHex = (next: string) => {
+    const formatted = (next.startsWith("#") ? next : `#${next}`).slice(0, 7).toUpperCase();
+    setHex(formatted);
+    if (/^#[0-9A-F]{6}$/.test(formatted)) onChange(formatted.toLowerCase());
+  };
+  return <label className="block"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span><span className="mt-1 flex items-center gap-2 rounded-md border border-input bg-card p-2"><input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-8 w-12 cursor-pointer border-0 bg-transparent" /><input type="text" value={hex} onChange={(event) => updateHex(event.target.value)} onBlur={() => setHex(value.toUpperCase())} aria-label={`${label} hex code`} className="min-w-0 flex-1 rounded border border-input bg-background px-2 py-1 font-mono text-xs uppercase outline-none focus:border-ring" placeholder="#1D4ED8" /></span></label>;
 }
 function Frame({ children }: { children: React.ReactNode }) { return <div className="grid min-h-screen place-items-center bg-secondary px-6 py-12"><div className="card-surface w-full max-w-lg p-8 text-center">{children}</div></div>; }
 function Row({ term, value }: { term: string; value: string }) { return <div className="flex justify-between gap-4 border-b border-border pb-2 last:border-0"><dt className="text-muted-foreground">{term}</dt><dd className="font-semibold">{value}</dd></div>; }

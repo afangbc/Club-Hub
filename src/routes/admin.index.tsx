@@ -248,12 +248,27 @@ function SchoolBranding() {
 }
 
 function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const [hex, setHex] = useState(value.toUpperCase());
+  useEffect(() => setHex(value.toUpperCase()), [value]);
+  const updateHex = (next: string) => {
+    const formatted = (next.startsWith("#") ? next : `#${next}`).slice(0, 7).toUpperCase();
+    setHex(formatted);
+    if (/^#[0-9A-F]{6}$/.test(formatted)) onChange(formatted.toLowerCase());
+  };
   return (
     <label className="block">
       <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
       <span className="mt-1 flex items-center gap-2 rounded-md border border-input bg-card p-2">
         <input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-8 w-12 cursor-pointer border-0 bg-transparent" />
-        <code className="text-xs uppercase">{value}</code>
+        <input
+          type="text"
+          value={hex}
+          onChange={(event) => updateHex(event.target.value)}
+          onBlur={() => setHex(value.toUpperCase())}
+          aria-label={`${label} hex code`}
+          className="w-24 rounded border border-input bg-background px-2 py-1 font-mono text-xs uppercase outline-none focus:border-ring"
+          placeholder="#1D4ED8"
+        />
       </span>
     </label>
   );
