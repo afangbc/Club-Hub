@@ -81,15 +81,15 @@ export function StaffShell({ children }: { children: ReactNode }) {
             </button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 px-2">
+        <nav className="flow-nav mx-auto flex max-w-6xl gap-1 px-2">
           {nav.map((n) => (
             <Link
               key={n.to}
               to={n.to}
               activeOptions={{ exact: n.to === "/manage" }}
-              activeProps={{ className: "border-brand text-brand" }}
-              inactiveProps={{ className: "border-transparent opacity-70 hover:opacity-100" }}
-              className="flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-semibold"
+              activeProps={{ className: "flow-nav-active text-brand" }}
+              inactiveProps={{ className: "opacity-70" }}
+              className="flow-nav-tab flex items-center gap-2 px-3 py-2 text-sm font-semibold"
             >
               <n.icon className="size-4" />
               {n.label}

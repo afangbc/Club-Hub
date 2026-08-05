@@ -157,6 +157,21 @@
     transition: background-color 200ms ease, color 200ms ease;
   }
 
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-duration: 180ms;
+    transition-timing-function: ease-out;
+  }
+
+  button:not(:disabled):active,
+  a:active {
+    transform: scale(0.98);
+  }
+
   h1,
   h2,
   h3 {
@@ -222,4 +237,46 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: 0 1px 2px oklch(0.21 0.055 264 / 0.07);
+}
+
+.flow-nav-tab {
+  position: relative;
+  transition: color 240ms ease, opacity 240ms ease, transform 240ms ease;
+}
+
+.flow-nav-tab::after {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0;
+  left: 0.7rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--color-brand);
+  content: "";
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.flow-nav-active::after,
+.flow-nav-tab:hover::after,
+.flow-nav-tab:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.flow-nav-tab:hover,
+.flow-nav-tab:focus-visible {
+  color: var(--color-brand);
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.flow-nav:has(.flow-nav-tab:hover) .flow-nav-active:not(:hover),
+.flow-nav:has(.flow-nav-tab:focus-visible) .flow-nav-active:not(:focus-visible) {
+  color: inherit;
+}
+
+.flow-nav:has(.flow-nav-tab:hover) .flow-nav-active:not(:hover)::after,
+.flow-nav:has(.flow-nav-tab:focus-visible) .flow-nav-active:not(:focus-visible)::after {
+  transform: scaleX(0);
 }

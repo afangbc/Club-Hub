@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Lock, Globe, Search, Check, Clock } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { SmoothCollapse } from "@/components/SmoothCollapse";
 import { CATEGORIES, SCHOOL, type Club } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
@@ -146,8 +147,8 @@ export function ClubCard({ club }: { club: Club }) {
         </div>
       </dl>
 
-      {showHow && (
-        <div className="mt-3 space-y-2">
+      <SmoothCollapse open={showHow}>
+        <div className="space-y-2">
           {club.joinInstructions && (
             <p className="rounded-md bg-secondary px-3 py-2 text-xs text-secondary-foreground">
               <span className="font-semibold">How to join: </span>
@@ -164,7 +165,7 @@ export function ClubCard({ club }: { club: Club }) {
             />
           )}
         </div>
-      )}
+      </SmoothCollapse>
 
       {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
 

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarDays, Globe, Lock, Megaphone, Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { ClubForm } from "@/components/ClubForm";
+import { SmoothCollapse } from "@/components/SmoothCollapse";
 import type { Club } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 import { campusRooms, staffClubs } from "@/lib/staff";
@@ -50,8 +51,8 @@ function Dashboard() {
         </button>
       </div>
 
-      {creating && (
-        <section className="card-surface mt-4 p-5">
+      <SmoothCollapse open={creating} openClassName="mt-4">
+        <section className="card-surface p-5">
           <h2 className="text-2xl leading-tight">Create a club</h2>
           <p className="mb-4 mt-1 text-xs text-muted-foreground">
             You're listed as the sponsor. Students see it in the directory as soon as you save.
@@ -67,7 +68,7 @@ function Dashboard() {
             }}
           />
         </section>
-      )}
+      </SmoothCollapse>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={Users} label="Clubs sponsored" value={mine.length} />
@@ -187,14 +188,8 @@ function ClubEditor({ club, rooms, pending }: { club: Club; rooms: string[]; pen
         {open ? "Close settings" : "Edit club settings"}
       </button>
 
-      <div
-        aria-hidden={!open}
-        inert={!open}
-        className={`grid transition-[grid-template-rows,opacity,margin] duration-300 ease-out ${
-          open ? "mt-3 grid-rows-[1fr] opacity-100" : "mt-0 grid-rows-[0fr] opacity-0"
-        }`}
-      >
-        <div className="min-h-0 overflow-hidden">
+      <SmoothCollapse open={open}>
+        <div>
           <ClubForm
             key={club.id}
             rooms={rooms}
@@ -240,7 +235,7 @@ function ClubEditor({ club, rooms, pending }: { club: Club; rooms: string[]; pen
             )}
           </div>
         </div>
-      </div>
+      </SmoothCollapse>
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
     </article>
   );

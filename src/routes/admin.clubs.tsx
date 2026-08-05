@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Globe, Lock, Plus, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ClubForm } from "@/components/ClubForm";
+import { SmoothCollapse } from "@/components/SmoothCollapse";
 import type { Club, StaffAccount } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 import { campusRooms } from "@/lib/staff";
@@ -52,8 +53,8 @@ function AdminClubs() {
         </button>
       </div>
 
-      {creating && (
-        <section className="card-surface mt-4 p-5">
+      <SmoothCollapse open={creating} openClassName="mt-4">
+        <section className="card-surface p-5">
           <h2 className="text-2xl leading-tight">Create a club</h2>
           <p className="mb-4 mt-1 text-xs text-muted-foreground">
             Pick any approved sponsor — the club shows up in their console and in the student
@@ -77,7 +78,7 @@ function AdminClubs() {
             />
           )}
         </section>
-      )}
+      </SmoothCollapse>
 
       <div className="relative mt-6 max-w-md">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -162,8 +163,8 @@ function ClubRow({
         </button>
       </div>
 
-      {open && (
-        <div className="mt-4 border-t border-border pt-4">
+      <SmoothCollapse open={open} openClassName="mt-4">
+        <div className="border-t border-border pt-4">
           <ClubForm
             key={club.id}
             sponsors={options}
@@ -208,7 +209,7 @@ function ClubRow({
             {deleteError && <span className="text-sm text-destructive">{deleteError}</span>}
           </div>
         </div>
-      )}
+      </SmoothCollapse>
     </article>
   );
 }
