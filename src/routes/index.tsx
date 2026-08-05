@@ -71,7 +71,7 @@ function Index() {
           <span className="flex size-10 items-center justify-center rounded-lg bg-brand pt-0.5 font-display text-[2rem] leading-none text-brand-foreground">
             C
           </span>
-          <span className="font-display text-3xl">ClubHub</span>
+          <span className="font-display text-4xl leading-none">ClubHub</span>
         </div>
         <div className="max-w-md py-14">
           <h1 className="text-5xl leading-[1.05] lg:text-6xl">
