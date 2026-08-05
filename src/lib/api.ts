@@ -193,7 +193,7 @@ export const reviewMembershipFn = createServerFn({ method: "POST" })
     return reviewMembership(data);
   });
 
-function clubInput(raw: Partial<ClubInput>): ClubInput {
+function clubInput(raw: Partial<ClubInput>): Required<ClubInput> {
   return {
     name: str(raw.name, 80),
     category: str(raw.category, 20) as ClubCategory,

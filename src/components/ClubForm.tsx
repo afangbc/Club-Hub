@@ -60,7 +60,9 @@ export function ClubForm({
           schedule,
           blurb,
           joinInstructions: instructions,
-          sponsorId,
+          // Teachers never submit this field. Its presence means an admin
+          // deliberately used the sponsor picker.
+          ...(sponsors ? { sponsorId } : {}),
         });
         setBusy(false);
         setError(problem ?? "");

@@ -829,7 +829,7 @@ export type ClubInput = {
   blurb: string;
   joinInstructions: string;
   /** Admins may hand a new club straight to a sponsor; teachers always get themselves. */
-  sponsorId: string;
+  sponsorId?: string;
 };
 
 function validateClubInput(input: ClubInput): string | null {
