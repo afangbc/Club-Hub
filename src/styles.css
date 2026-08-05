@@ -108,6 +108,17 @@
   --sidebar-ring: oklch(0.704 0.04 256.788);
 }
 
+/* The app remains scrollable, but route-height changes never flash a browser scrollbar. */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 .dark {
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
