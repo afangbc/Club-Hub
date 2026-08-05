@@ -24,6 +24,7 @@ import {
   reviewStaffFn,
   revokeAdminFn,
   setSchoolCodeFn,
+  setSchoolColorsFn,
   signInFn,
   signOutFn,
   signUpFn,
@@ -114,6 +115,7 @@ type State = {
   resolveRequest: Action<[string, boolean]>;
   reviewStaff: Action<[string, boolean]>;
   updateSchoolCode: Action<[string]>;
+  updateSchoolColors: Action<[{ primaryColor: string; secondaryColor: string }]>;
   requestAdmin: Action<[{
     name: string; district: string; mascot: string; primaryColor: string; secondaryColor: string; message: string;
   }]>;
@@ -277,6 +279,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       resolveRequest: (id, approve) => run(() => reviewMembershipFn({ data: { id, approve } })),
       reviewStaff: (userId, approve) => run(() => reviewStaffFn({ data: { userId, approve } })),
       updateSchoolCode: (code) => run(() => setSchoolCodeFn({ data: { code } })),
+      updateSchoolColors: (colors) => run(() => setSchoolColorsFn({ data: colors })),
 
       requestAdmin: (input) => run(() => requestAdminFn({ data: input })),
       reviewAdminRequest: (id, approve) =>

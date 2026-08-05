@@ -333,3 +333,13 @@ export const setSchoolCodeFn = createServerFn({ method: "POST" })
     const { setSchoolCode } = await import("@/server/service");
     return setSchoolCode(data);
   });
+
+export const setSchoolColorsFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { primaryColor: string; secondaryColor: string }) => {
+    const raw = (d ?? {}) as Partial<typeof d>;
+    return { primaryColor: str(raw.primaryColor, 7), secondaryColor: str(raw.secondaryColor, 7) };
+  })
+  .handler(async ({ data }): Promise<Result> => {
+    const { setSchoolColors } = await import("@/server/service");
+    return setSchoolColors(data);
+  });

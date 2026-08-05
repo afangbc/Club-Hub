@@ -1226,3 +1226,22 @@ export async function setSchoolCode(input: { code: string }): Promise<Result> {
     return ok;
   });
 }
+
+export async function setSchoolColors(input: { primaryColor: string; secondaryColor: string }): Promise<Result> {
+  const { user, error } = await requireEnrolled();
+  if (!user) return fail(error);
+  if (!isActiveAdmin(user)) return fail("Only a school admin can change school colors.");
+
+  const primaryColor = input.primaryColor.trim().toLowerCase();
+  const secondaryColor = input.secondaryColor.trim().toLowerCase();
+  if (!validHexColor(primaryColor) || !validHexColor(secondaryColor))
+    return fail("Choose two valid school colors.");
+
+  return transaction((db) => {
+    const school = db.schools.find((candidate) => candidate.id === user.schoolId);
+    if (!school) return fail("School not found.");
+    school.primaryColor = primaryColor;
+    school.secondaryColor = secondaryColor;
+    return ok;
+  });
+}

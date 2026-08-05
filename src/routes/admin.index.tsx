@@ -148,6 +148,8 @@ function AdminHome() {
         )}
       </section>
 
+      <SchoolBranding />
+
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Panel
           to="/admin/teachers"
@@ -195,6 +197,65 @@ function AdminHome() {
         </ul>
       </section>
     </div>
+  );
+}
+
+function SchoolBranding() {
+  const { school, updateSchoolColors } = useSession();
+  const [primaryColor, setPrimaryColor] = useState(school?.primaryColor ?? "#1d4ed8");
+  const [secondaryColor, setSecondaryColor] = useState(school?.secondaryColor ?? "#facc15");
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!school) return;
+    setPrimaryColor(school.primaryColor);
+    setSecondaryColor(school.secondaryColor);
+  }, [school]);
+
+  if (!school) return null;
+
+  return (
+    <section className="card-surface mt-6 p-5">
+      <h2 className="text-2xl leading-tight">School colors</h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        These colors appear throughout ClubHub for everyone enrolled at {school.name}.
+      </p>
+      <form
+        className="mt-4 flex flex-wrap items-end gap-4"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          if (busy) return;
+          setBusy(true);
+          const error = await updateSchoolColors({ primaryColor, secondaryColor });
+          setBusy(false);
+          setMessage(error ? { ok: false, text: error } : { ok: true, text: "School colors saved." });
+        }}
+      >
+        <ColorPicker label="Primary color" value={primaryColor} onChange={setPrimaryColor} />
+        <ColorPicker label="Accent color" value={secondaryColor} onChange={setSecondaryColor} />
+        <div className="flex h-12 overflow-hidden rounded-md border border-border" aria-label="Color preview">
+          <span className="w-16" style={{ backgroundColor: primaryColor }} />
+          <span className="w-16" style={{ backgroundColor: secondaryColor }} />
+        </div>
+        <button type="submit" disabled={busy} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+          {busy ? "Saving…" : "Save colors"}
+        </button>
+      </form>
+      {message && <p className={`mt-3 text-sm ${message.ok ? "text-success" : "text-destructive"}`}>{message.text}</p>}
+    </section>
+  );
+}
+
+function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="mt-1 flex items-center gap-2 rounded-md border border-input bg-card p-2">
+        <input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-8 w-12 cursor-pointer border-0 bg-transparent" />
+        <code className="text-xs uppercase">{value}</code>
+      </span>
+    </label>
   );
 }
 
