@@ -68,7 +68,7 @@ function Index() {
     <div className="grid min-h-screen lg:grid-cols-2">
       <section className="relative flex flex-col justify-between bg-primary px-8 py-12 text-primary-foreground lg:px-14">
         <div className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-lg bg-brand font-display text-2xl text-brand-foreground">
+          <span className="flex size-10 items-center justify-center rounded-lg bg-brand pt-0.5 font-display text-[2rem] leading-none text-brand-foreground">
             C
           </span>
           <span className="font-display text-3xl">ClubHub</span>
