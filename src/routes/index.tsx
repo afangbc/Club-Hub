@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { GRADES, SCHOOL, homeFor, type Role } from "@/lib/campus-data";
+import { DEMO_PASSWORD, GRADES, SCHOOL, homeFor, type Role } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/")({
@@ -26,6 +26,12 @@ const roles: { value: Role; label: string; hint: string }[] = [
   { value: "student", label: "Student", hint: "Join clubs & see your calendar" },
   { value: "teacher", label: "Teacher", hint: "Sponsor clubs & post meetings" },
   { value: "admin", label: "School Admin", hint: "Request the campus from ClubHub" },
+];
+
+const demoLogins = [
+  { role: "Student", email: `jordan.rivera.123@${SCHOOL.studentDomain}` },
+  { role: "Teacher", email: `marcus.alvarez@${SCHOOL.staffDomain}` },
+  { role: "Admin", email: `alicia.nguyen@${SCHOOL.staffDomain}` },
 ];
 
 function Index() {
@@ -237,6 +243,29 @@ function Index() {
                   {mode === "signup" ? "Sign in" : "Create an account"}
                 </button>
               </p>
+              {mode === "signin" && (
+                <div className="rounded-md bg-secondary p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Demo accounts · password {DEMO_PASSWORD}
+                  </p>
+                  <div className="mt-2 grid gap-1.5">
+                    {demoLogins.map((demo) => (
+                      <button
+                        key={demo.email}
+                        type="button"
+                        onClick={() => {
+                          setEmail(demo.email);
+                          setPassword(DEMO_PASSWORD);
+                          setError("");
+                        }}
+                        className="rounded-md px-2 py-1.5 text-left text-xs text-secondary-foreground hover:bg-background"
+                      >
+                        <span className="font-semibold">{demo.role}</span> — {demo.email}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </form>
           ) : (
             <form
