@@ -141,6 +141,21 @@ const emptyState: AppState = {
 
 export const stateQueryKey = ["clubhub", "state"] as const;
 
+/**
+ * Tells a dead connection apart from a server that answered and then failed.
+ *
+ * The browser only produces a `TypeError` when the request never completed, so
+ * anything else means the server was reached and broke inside — a missing
+ * database binding, say. Blaming those on the user's wifi sends whoever is
+ * debugging to entirely the wrong place.
+ */
+function describeFailure(error: unknown): string {
+  const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+  if (offline || error instanceof TypeError)
+    return "Couldn't reach the server. Check your connection and try again.";
+  return "The server hit an error handling that. If it keeps happening, whoever runs this site should check the server logs.";
+}
+
 const Ctx = createContext<State | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
@@ -167,7 +182,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         result = await call();
       } catch (error) {
         console.error(error);
-        return "Couldn't reach the server. Check your connection and try again.";
+        return describeFailure(error);
       }
       await refresh();
       return result.error;
