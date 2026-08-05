@@ -11,7 +11,7 @@ import {
 } from "@/lib/campus-data";
 import { hashPassword } from "./crypto";
 
-export const DB_VERSION = 5;
+export const DB_VERSION = 6;
 
 export type SchoolRecord = {
   id: string;
@@ -60,6 +60,23 @@ export type MembershipRecord = {
   userId: string;
   status: "member" | "pending";
   note: string;
+  createdAt: string;
+};
+
+export type TeamRecord = {
+  id: string;
+  schoolId: string;
+  name: string;
+  sport: string;
+  sponsorId: string;
+  joinCode: string;
+  createdAt: string;
+};
+
+export type TeamMembershipRecord = {
+  id: string;
+  teamId: string;
+  userId: string;
   createdAt: string;
 };
 
@@ -124,6 +141,8 @@ export type Database = {
   users: UserRecord[];
   clubs: ClubRecord[];
   memberships: MembershipRecord[];
+  teams: TeamRecord[];
+  teamMemberships: TeamMembershipRecord[];
   events: EventRecord[];
   announcements: AnnouncementRecord[];
   sessions: SessionRecord[];
@@ -185,6 +204,12 @@ export async function buildSeedDatabase(): Promise<Database> {
       ["m-5", "c-robotics", "u-park", "member", ""], ["m-6", "c-robotics", "u-brooks", "pending", "Safety quiz passed at open build night."],
       ["m-7", "c-robotics", "u-iqbal", "pending", "CAD experience from middle school."], ["m-8", "c-nhs", "u-fitzgerald", "pending", "3.8 GPA and 24 service hours."],
     ].map(([id, clubId, userId, status, note]) => ({ id: id!, clubId: clubId!, userId: userId!, status: status as "member" | "pending", note: note!, createdAt })),
+    teams: [
+      { id: "t-basketball", schoolId: FRISCO_SCHOOL_ID, name: "Varsity Basketball", sport: "Basketball", sponsorId: "u-alvarez", joinCode: "HOOPS-4412", createdAt },
+    ],
+    teamMemberships: [
+      { id: "tm-1", teamId: "t-basketball", userId: "u-park", createdAt },
+    ],
     events: [
       { id: "e-1", clubId: "c-tsa", title: "TSA General Meeting", date: day(1), start: "16:15", end: "17:15", location: "C-214" },
       { id: "e-2", clubId: "c-robotics", title: "Open Build Night", date: day(3), start: "16:00", end: "19:00", location: "Shop B" },

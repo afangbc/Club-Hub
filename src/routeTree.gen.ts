@@ -20,6 +20,7 @@ import { Route as MyClubsRouteImport } from './routes/my-clubs'
 import { Route as OwnerRouteImport } from './routes/owner'
 import { Route as PendingRouteImport } from './routes/pending'
 import { Route as RequestAdminRouteImport } from './routes/request-admin'
+import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminClubsRouteImport } from './routes/admin.clubs'
@@ -29,6 +30,7 @@ import { Route as ManageIndexRouteImport } from './routes/manage.index'
 import { Route as ManageAnnouncementsRouteImport } from './routes/manage.announcements'
 import { Route as ManageEventsRouteImport } from './routes/manage.events'
 import { Route as ManageRequestsRouteImport } from './routes/manage.requests'
+import { Route as ManageTeamsRouteImport } from './routes/manage.teams'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -85,6 +87,11 @@ const RequestAdminRoute = RequestAdminRouteImport.update({
   path: '/request-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TeamsRoute = TeamsRouteImport.update({
+  id: '/teams',
+  path: '/teams',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
@@ -130,6 +137,11 @@ const ManageRequestsRoute = ManageRequestsRouteImport.update({
   path: '/requests',
   getParentRoute: () => ManageRoute,
 } as any)
+const ManageTeamsRoute = ManageTeamsRouteImport.update({
+  id: '/teams',
+  path: '/teams',
+  getParentRoute: () => ManageRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -143,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/owner': typeof OwnerRoute
   '/pending': typeof PendingRoute
   '/request-admin': typeof RequestAdminRoute
+  '/teams': typeof TeamsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/clubs': typeof AdminClubsRoute
   '/admin/teachers': typeof AdminTeachersRoute
@@ -150,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/manage/announcements': typeof ManageAnnouncementsRoute
   '/manage/events': typeof ManageEventsRoute
   '/manage/requests': typeof ManageRequestsRoute
+  '/manage/teams': typeof ManageTeamsRoute
   '/admin/': typeof AdminIndexRoute
   '/manage/': typeof ManageIndexRoute
 }
@@ -163,6 +177,7 @@ export interface FileRoutesByTo {
   '/owner': typeof OwnerRoute
   '/pending': typeof PendingRoute
   '/request-admin': typeof RequestAdminRoute
+  '/teams': typeof TeamsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/clubs': typeof AdminClubsRoute
   '/admin/teachers': typeof AdminTeachersRoute
@@ -170,6 +185,7 @@ export interface FileRoutesByTo {
   '/manage/announcements': typeof ManageAnnouncementsRoute
   '/manage/events': typeof ManageEventsRoute
   '/manage/requests': typeof ManageRequestsRoute
+  '/manage/teams': typeof ManageTeamsRoute
   '/admin': typeof AdminIndexRoute
   '/manage': typeof ManageIndexRoute
 }
@@ -186,6 +202,7 @@ export interface FileRoutesById {
   '/owner': typeof OwnerRoute
   '/pending': typeof PendingRoute
   '/request-admin': typeof RequestAdminRoute
+  '/teams': typeof TeamsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/clubs': typeof AdminClubsRoute
   '/admin/teachers': typeof AdminTeachersRoute
@@ -193,6 +210,7 @@ export interface FileRoutesById {
   '/manage/announcements': typeof ManageAnnouncementsRoute
   '/manage/events': typeof ManageEventsRoute
   '/manage/requests': typeof ManageRequestsRoute
+  '/manage/teams': typeof ManageTeamsRoute
   '/admin/': typeof AdminIndexRoute
   '/manage/': typeof ManageIndexRoute
 }
@@ -210,6 +228,7 @@ export interface FileRouteTypes {
     | '/owner'
     | '/pending'
     | '/request-admin'
+    | '/teams'
     | '/verify-email'
     | '/admin/clubs'
     | '/admin/teachers'
@@ -217,6 +236,7 @@ export interface FileRouteTypes {
     | '/manage/announcements'
     | '/manage/events'
     | '/manage/requests'
+    | '/manage/teams'
     | '/admin/'
     | '/manage/'
   fileRoutesByTo: FileRoutesByTo
@@ -230,6 +250,7 @@ export interface FileRouteTypes {
     | '/owner'
     | '/pending'
     | '/request-admin'
+    | '/teams'
     | '/verify-email'
     | '/admin/clubs'
     | '/admin/teachers'
@@ -237,6 +258,7 @@ export interface FileRouteTypes {
     | '/manage/announcements'
     | '/manage/events'
     | '/manage/requests'
+    | '/manage/teams'
     | '/admin'
     | '/manage'
   id:
@@ -252,6 +274,7 @@ export interface FileRouteTypes {
     | '/owner'
     | '/pending'
     | '/request-admin'
+    | '/teams'
     | '/verify-email'
     | '/admin/clubs'
     | '/admin/teachers'
@@ -259,6 +282,7 @@ export interface FileRouteTypes {
     | '/manage/announcements'
     | '/manage/events'
     | '/manage/requests'
+    | '/manage/teams'
     | '/admin/'
     | '/manage/'
   fileRoutesById: FileRoutesById
@@ -275,6 +299,7 @@ export interface RootRouteChildren {
   OwnerRoute: typeof OwnerRoute
   PendingRoute: typeof PendingRoute
   RequestAdminRoute: typeof RequestAdminRoute
+  TeamsRoute: typeof TeamsRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
 }
 
@@ -357,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RequestAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/teams': {
+      id: '/teams'
+      path: '/teams'
+      fullPath: '/teams'
+      preLoaderRoute: typeof TeamsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/verify-email': {
       id: '/verify-email'
       path: '/verify-email'
@@ -420,6 +452,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManageRequestsRouteImport
       parentRoute: typeof ManageRoute
     }
+    '/manage/teams': {
+      id: '/manage/teams'
+      path: '/teams'
+      fullPath: '/manage/teams'
+      preLoaderRoute: typeof ManageTeamsRouteImport
+      parentRoute: typeof ManageRoute
+    }
   }
 }
 
@@ -443,6 +482,7 @@ interface ManageRouteChildren {
   ManageAnnouncementsRoute: typeof ManageAnnouncementsRoute
   ManageEventsRoute: typeof ManageEventsRoute
   ManageRequestsRoute: typeof ManageRequestsRoute
+  ManageTeamsRoute: typeof ManageTeamsRoute
   ManageIndexRoute: typeof ManageIndexRoute
 }
 
@@ -450,6 +490,7 @@ const ManageRouteChildren: ManageRouteChildren = {
   ManageAnnouncementsRoute: ManageAnnouncementsRoute,
   ManageEventsRoute: ManageEventsRoute,
   ManageRequestsRoute: ManageRequestsRoute,
+  ManageTeamsRoute: ManageTeamsRoute,
   ManageIndexRoute: ManageIndexRoute,
 }
 
@@ -468,6 +509,7 @@ const rootRouteChildren: RootRouteChildren = {
   OwnerRoute: OwnerRoute,
   PendingRoute: PendingRoute,
   RequestAdminRoute: RequestAdminRoute,
+  TeamsRoute: TeamsRoute,
   VerifyEmailRoute: VerifyEmailRoute,
 }
 export const routeTree = rootRouteImport

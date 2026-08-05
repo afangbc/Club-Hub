@@ -77,6 +77,23 @@ export const joinSchoolFn = createServerFn({ method: "POST" })
     return joinSchool(data);
   });
 
+export const createTeamFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { name: string; sport: string }) => {
+    const raw = (d ?? {}) as Partial<typeof d>;
+    return { name: str(raw.name, 100), sport: str(raw.sport, 80) };
+  })
+  .handler(async ({ data }): Promise<Result> => {
+    const { createTeam } = await import("@/server/service");
+    return createTeam(data);
+  });
+
+export const joinTeamFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { code: string }) => ({ code: str((d ?? {}).code, 40) }))
+  .handler(async ({ data }): Promise<Result> => {
+    const { joinTeam } = await import("@/server/service");
+    return joinTeam(data);
+  });
+
 export const createSchoolFn = createServerFn({ method: "POST" })
   .inputValidator((d: { name: string; mascot: string; district: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;

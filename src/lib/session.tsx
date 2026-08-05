@@ -5,6 +5,7 @@ import {
   createAnnouncementFn,
   createClubFn,
   createEventFn,
+  createTeamFn,
   createSchoolFn,
   deleteAccountFn,
   deleteAnnouncementFn,
@@ -13,6 +14,7 @@ import {
   getState,
   joinClubFn,
   joinSchoolFn,
+  joinTeamFn,
   leaveClubFn,
   requestAdminFn,
   requestClubFn,
@@ -46,6 +48,7 @@ import {
   type SchoolSummary,
   type Session,
   type StaffAccount,
+  type Team,
 } from "./campus-data";
 import type { ClubInput } from "@/server/service";
 
@@ -68,6 +71,7 @@ type State = {
   prefs: Prefs;
   school: AppState["school"];
   clubs: Club[];
+  teams: Team[];
   events: ClubEvent[];
   announcements: Announcement[];
   myClubs: string[];
@@ -99,6 +103,8 @@ type State = {
   leaveClub: Action<[string]>;
   requestClub: Action<[string, string]>;
   createClub: Action<[ClubInput]>;
+  createTeam: Action<[{ name: string; sport: string }]>;
+  joinTeam: Action<[string]>;
   updateClub: Action<[string, Partial<ClubInput>]>;
   deleteClub: Action<[string]>;
   addEvent: Action<[Omit<ClubEvent, "id">]>;
@@ -123,6 +129,7 @@ const emptyState: AppState = {
   prefs: defaultPrefs,
   school: null,
   clubs: [],
+  teams: [],
   events: [],
   announcements: [],
   myClubs: [],
@@ -200,6 +207,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       prefs: state.prefs,
       school: state.school,
       clubs: state.clubs,
+      teams: state.teams,
       events: state.events,
       announcements: state.announcements,
       myClubs: state.myClubs,
@@ -237,6 +245,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       createClub: (input) => run(() => createClubFn({ data: input })),
       updateClub: (id, patch) => run(() => updateClubFn({ data: { id, patch } })),
       deleteClub: (id) => run(() => deleteClubFn({ data: { id } })),
+      createTeam: (input) => run(() => createTeamFn({ data: input })),
+      joinTeam: (code) => run(() => joinTeamFn({ data: { code } })),
 
       addEvent: (event) => run(() => createEventFn({ data: event })),
       removeEvent: (id) => run(() => deleteEventFn({ data: { id } })),

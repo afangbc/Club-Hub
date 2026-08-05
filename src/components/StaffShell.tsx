@@ -6,6 +6,7 @@ import {
   Megaphone,
   Settings,
   UserCheck,
+  Trophy,
 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { SCHOOL, roleLabel } from "@/lib/campus-data";
@@ -13,6 +14,7 @@ import { useSession } from "@/lib/session";
 
 const nav = [
   { to: "/manage", label: "My Clubs", icon: LayoutDashboard },
+  { to: "/manage/teams", label: "Teams", icon: Trophy },
   { to: "/manage/events", label: "Meetings", icon: CalendarPlus },
   { to: "/manage/announcements", label: "Announcements", icon: Megaphone },
   { to: "/manage/requests", label: "Requests", icon: UserCheck },

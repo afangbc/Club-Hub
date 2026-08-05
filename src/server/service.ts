@@ -19,6 +19,7 @@ import {
   type SchoolSummary,
   type Session,
   type StaffAccount,
+  type Team,
 } from "@/lib/campus-data";
 import {
   clearFailures,
@@ -33,7 +34,7 @@ import { hashPassword, hashToken, newId, verifyPassword } from "./crypto";
 import { emailInConsoleMode, sendVerificationCode } from "./email";
 import { isBootstrapAdmin, isOwner, ownersConfigured } from "./owners";
 import { FRISCO_SCHOOL_ID } from "./schema";
-import type { AdminRequestRecord, ClubRecord, Database, UserRecord } from "./schema";
+import type { AdminRequestRecord, ClubRecord, Database, TeamRecord, UserRecord } from "./schema";
 import { getDatabase, transaction } from "./store";
 
 export type Result = { error: string | null };
@@ -52,6 +53,7 @@ export type AppState = {
   prefs: Prefs;
   school: { name: string; mascot: string; district: string } | null;
   clubs: Club[];
+  teams: Team[];
   events: ClubEvent[];
   announcements: Announcement[];
   myClubs: string[];
@@ -108,6 +110,20 @@ function toClub(db: Database, club: ClubRecord): Club {
     members: db.memberships.filter((m) => m.clubId === club.id && m.status === "member").length,
     blurb: club.blurb,
     ...(club.joinInstructions === undefined ? {} : { joinInstructions: club.joinInstructions }),
+  };
+}
+
+function toTeam(db: Database, team: TeamRecord, viewer: UserRecord): Team {
+  const sponsor = db.users.find((user) => user.id === team.sponsorId);
+  const canSeeCode = viewer.role === "admin" || team.sponsorId === viewer.id;
+  return {
+    id: team.id,
+    name: team.name,
+    sport: team.sport,
+    sponsorId: team.sponsorId,
+    sponsorName: sponsor?.name ?? "Unassigned",
+    members: db.teamMemberships.filter((member) => member.teamId === team.id).length,
+    ...(canSeeCode ? { code: team.joinCode } : {}),
   };
 }
 
@@ -188,6 +204,7 @@ export async function loadState(): Promise<AppState> {
     prefs: user?.prefs ?? { ...defaultPrefs },
     school: null,
     clubs: [],
+    teams: [],
     events: [],
     announcements: [],
     myClubs: [],
@@ -246,7 +263,14 @@ export async function loadState(): Promise<AppState> {
   // Staff waiting on approval get their own status back and nothing else.
   if (user.role !== "student" && user.status !== "active") return empty;
 
-  const clubs = db.clubs.filter((c) => c.schoolId === school.id);
+  const clubs = db.clubs.filter((c) => c.schoolId === school.id && c.category !== "Athletics");
+  const schoolTeams = db.teams.filter((team) => team.schoolId === school.id);
+  const joinedTeamIds = new Set(
+    db.teamMemberships.filter((member) => member.userId === user.id).map((member) => member.teamId),
+  );
+  const visibleTeams = schoolTeams.filter((team) =>
+    user.role === "admin" ? true : user.role === "teacher" ? team.sponsorId === user.id : joinedTeamIds.has(team.id),
+  );
   const mine = db.memberships.filter((m) => m.userId === user.id);
   const myClubIds = mine.filter((m) => m.status === "member").map((m) => m.clubId);
 
@@ -305,6 +329,7 @@ export async function loadState(): Promise<AppState> {
     prefs: user.prefs,
     school: { name: school.name, mascot: school.mascot, district: school.district },
     clubs: clubs.map((c) => toClub(db, c)),
+    teams: visibleTeams.map((team) => toTeam(db, team, user)),
     events: db.events.filter((e) => clubs.some((c) => c.id === e.clubId)),
     announcements: visibleAnnouncements
       .map((a) => ({
@@ -323,6 +348,46 @@ export async function loadState(): Promise<AppState> {
     users,
     schoolCode: isActiveAdmin(user) ? school.joinCode : "",
   };
+}
+
+// ---------------------------------------------------------------------- teams
+
+function generateTeamCode(): string {
+  const bytes = crypto.getRandomValues(new Uint32Array(1));
+  return `TEAM-${String((bytes[0] ?? 0) % 1_000_000).padStart(6, "0")}`;
+}
+
+export async function createTeam(input: { name: string; sport: string }): Promise<Result> {
+  const { user, error } = await requireEnrolled();
+  if (!user) return fail(error);
+  if (!isActiveStaff(user)) return fail("Only approved staff can create a team.");
+  const name = input.name.trim();
+  const sport = input.sport.trim();
+  if (name.length < 2) return fail("Enter the team name.");
+  if (sport.length < 2) return fail("Enter the sport or activity.");
+
+  return transaction((db) => {
+    if (db.teams.some((team) => team.schoolId === user.schoolId && norm(team.name) === norm(name)))
+      return fail("A team with that name already exists at your school.");
+    let joinCode = generateTeamCode();
+    while (db.teams.some((team) => norm(team.joinCode) === norm(joinCode))) joinCode = generateTeamCode();
+    db.teams.push({ id: newId("team"), schoolId: user.schoolId!, name, sport, sponsorId: user.id, joinCode, createdAt: new Date().toISOString() });
+    return ok;
+  });
+}
+
+export async function joinTeam(input: { code: string }): Promise<Result> {
+  const { user, error } = await requireEnrolled();
+  if (!user) return fail(error);
+  if (user.role !== "student") return fail("Only student accounts join teams with a code.");
+  const code = norm(input.code);
+  return transaction((db) => {
+    const team = db.teams.find((candidate) => candidate.schoolId === user.schoolId && norm(candidate.joinCode) === code);
+    if (!team) return fail("That team code isn't valid for your school.");
+    if (db.teamMemberships.some((member) => member.teamId === team.id && member.userId === user.id)) return ok;
+    db.teamMemberships.push({ id: newId("tm"), teamId: team.id, userId: user.id, createdAt: new Date().toISOString() });
+    return ok;
+  });
 }
 
 // --------------------------------------------------------------------- access
@@ -727,11 +792,15 @@ export async function deleteAccount(): Promise<Result> {
   if (!user) return fail("You're signed out. Sign in and try again.");
 
   const sponsored = await transaction((db) => {
-    const owns = db.clubs.filter((c) => c.sponsorId === user.id);
-    if (owns.length > 0) return owns.map((c) => c.name);
+    const owns = [
+      ...db.clubs.filter((club) => club.sponsorId === user.id).map((club) => club.name),
+      ...db.teams.filter((team) => team.sponsorId === user.id).map((team) => team.name),
+    ];
+    if (owns.length > 0) return owns;
 
     db.users = db.users.filter((u) => u.id !== user.id);
     db.memberships = db.memberships.filter((m) => m.userId !== user.id);
+    db.teamMemberships = db.teamMemberships.filter((membership) => membership.userId !== user.id);
     db.sessions = db.sessions.filter((s) => s.userId !== user.id);
     return [];
   });

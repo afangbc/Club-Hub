@@ -58,6 +58,33 @@ async function migrate(parsed: LegacyDatabase): Promise<Database> {
   });
 
   next.adminRequests = next.adminRequests ?? [];
+  next.teams = next.teams ?? [];
+  next.teamMemberships = next.teamMemberships ?? [];
+
+  // Older builds represented sports teams as Athletics clubs. Move them out of
+  // the club directory while preserving their existing members.
+  const athleticClubs = next.clubs.filter((club) => club.category === "Athletics");
+  for (const club of athleticClubs) {
+    const teamId = `team_${club.id}`;
+    if (!next.teams.some((team) => team.id === teamId)) {
+      next.teams.push({
+        id: teamId,
+        schoolId: club.schoolId,
+        name: club.name,
+        sport: club.name,
+        sponsorId: club.sponsorId,
+        joinCode: `TEAM-${club.id.replace(/[^a-z0-9]/gi, "").slice(-4).toUpperCase().padStart(4, "0")}`,
+        createdAt: club.createdAt,
+      });
+      for (const member of next.memberships.filter((item) => item.clubId === club.id && item.status === "member"))
+        next.teamMemberships.push({ id: `tm_${member.id}`, teamId, userId: member.userId, createdAt: member.createdAt });
+    }
+  }
+  const athleticIds = new Set(athleticClubs.map((club) => club.id));
+  next.clubs = next.clubs.filter((club) => !athleticIds.has(club.id));
+  next.memberships = next.memberships.filter((item) => !athleticIds.has(item.clubId));
+  next.events = next.events.filter((event) => !athleticIds.has(event.clubId));
+  next.announcements = next.announcements.filter((announcement) => !athleticIds.has(announcement.clubId));
   delete next.schoolVerifications;
   next.version = DB_VERSION;
   return next as Database;

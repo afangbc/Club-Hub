@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, RotateCcw, X } from "lucide-react";
+import { Check, RotateCcw, Trophy, Users, X } from "lucide-react";
 import { useState } from "react";
-import { SCHOOL, roleLabel, type Club, type StaffAccount } from "@/lib/campus-data";
+import { SCHOOL, roleLabel, type StaffAccount } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/admin/teachers")({
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/admin/teachers")({
 });
 
 function AdminStaff() {
-  const { session, staff, clubs, reviewStaff } = useSession();
+  const { session, staff, clubs, teams, reviewStaff } = useSession();
   const [error, setError] = useState("");
 
   const waiting = staff.filter((s) => s.status === "pending");
@@ -86,7 +86,8 @@ function AdminStaff() {
           <Row
             key={s.id}
             staff={s}
-            detail={s.id === session?.id ? "That's you." : sponsoring(clubs, s.id)}
+            clubs={clubs.filter((club) => club.sponsorId === s.id).map((club) => club.name)}
+            teams={teams.filter((team) => team.sponsorId === s.id).map((team) => team.name)}
             action={
               s.id === session?.id ? null : (
                 <button
@@ -109,7 +110,8 @@ function AdminStaff() {
               <Row
                 key={s.id}
                 staff={s}
-                detail="Signed out and blocked until reinstated."
+                clubs={[]}
+                teams={[]}
                 action={
                   <button
                     onClick={() => void review(s.id, true)}
@@ -127,30 +129,34 @@ function AdminStaff() {
   );
 }
 
-function sponsoring(clubs: Club[], userId: string) {
-  const mine = clubs.filter((c) => c.sponsorId === userId);
-  return mine.length ? `Sponsors ${mine.map((c) => c.name).join(", ")}` : "No clubs yet.";
-}
-
 function Row({
   staff,
-  detail,
+  clubs,
+  teams,
   action,
 }: {
   staff: StaffAccount;
-  detail: string;
+  clubs: string[];
+  teams: string[];
   action: React.ReactNode;
 }) {
   return (
-    <li className="card-surface flex flex-wrap items-center gap-4 px-4 py-3">
-      <div className="min-w-52 flex-1">
+    <li className="card-surface grid gap-4 px-4 py-4 sm:grid-cols-[minmax(190px,1fr)_minmax(260px,1.5fr)_auto] sm:items-center">
+      <div>
         <p className="text-sm font-semibold">{staff.name}</p>
         <p className="text-xs text-muted-foreground">
           {staff.email} · {roleLabel[staff.role]}
         </p>
       </div>
-      <p className="text-xs text-muted-foreground">{detail}</p>
+      <div className="space-y-2">
+        <Sponsorship icon={Users} label="Clubs" names={clubs} />
+        <Sponsorship icon={Trophy} label="Teams" names={teams} />
+      </div>
       {action}
     </li>
   );
+}
+
+function Sponsorship({ icon: Icon, label, names }: { icon: typeof Users; label: string; names: string[] }) {
+  return <div className="flex items-start gap-2"><Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><div><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p><div className="mt-1 flex flex-wrap gap-1.5">{names.length ? names.map((name) => <span key={name} className="rounded-full bg-secondary px-2 py-1 text-xs font-medium">{name}</span>) : <span className="text-xs text-muted-foreground">None</span>}</div></div></div>;
 }

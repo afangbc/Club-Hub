@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, CalendarDays, Compass, LogOut, Settings, ShieldCheck, Users } from "lucide-react";
+import { Bell, CalendarDays, Compass, LogOut, Settings, ShieldCheck, Trophy, Users } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { SCHOOL, homeFor, roleLabel } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
@@ -7,6 +7,7 @@ import { useSession } from "@/lib/session";
 const nav = [
   { to: "/clubs", label: "Club Directory", icon: Compass },
   { to: "/my-clubs", label: "My Clubs", icon: Users },
+  { to: "/teams", label: "Join Team", icon: Trophy },
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/announcements", label: "Announcements", icon: Bell },
 ] as const;

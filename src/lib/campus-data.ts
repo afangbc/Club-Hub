@@ -23,7 +23,6 @@ export const CATEGORIES: ClubCategory[] = [
   "Service",
   "Arts",
   "Culture",
-  "Athletics",
 ];
 
 export const GRADES = ["9th", "10th", "11th", "12th"] as const;
@@ -160,6 +159,17 @@ export type Club = {
   members: number;
   blurb: string;
   joinInstructions?: string | undefined;
+};
+
+export type Team = {
+  id: string;
+  name: string;
+  sport: string;
+  sponsorId: string;
+  sponsorName: string;
+  members: number;
+  /** Only admins and the team's sponsor receive this value. */
+  code?: string;
 };
 
 export type ClubEvent = {
