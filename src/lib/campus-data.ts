@@ -182,6 +182,7 @@ export type ClubEvent = {
   start: string;
   end: string;
   location: string;
+  description?: string;
 };
 
 export type Announcement = {

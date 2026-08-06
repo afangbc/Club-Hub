@@ -308,6 +308,7 @@ export const createEventFn = createServerFn({ method: "POST" })
       start: string;
       end: string;
       location: string;
+      description?: string;
     }) => {
       const raw = (d ?? {}) as Partial<typeof d>;
       return {
@@ -318,6 +319,7 @@ export const createEventFn = createServerFn({ method: "POST" })
         start: str(raw.start, 20),
         end: str(raw.end, 20),
         location: str(raw.location, 80),
+        description: str(raw.description, 500),
       };
     },
   )

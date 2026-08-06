@@ -93,7 +93,7 @@ function CalendarPage() {
         </div>
       )}
 
-      <div className="card-surface mt-6 overflow-hidden">
+      <div className="card-surface mt-6 overflow-visible">
         <div className="grid grid-cols-7 border-b border-border bg-secondary">
           {WEEKDAYS.map((d) => (
             <div
@@ -128,11 +128,19 @@ function CalendarPage() {
                   {dayEvents.map((e) => (
                     <div
                       key={e.id}
-                      title={`${e.title} · ${formatTime(e.start)}–${formatTime(e.end)} · ${e.location}`}
-                      className="rounded bg-accent px-1.5 py-1 text-[11px] leading-tight text-accent-foreground"
+                      tabIndex={e.description ? 0 : undefined}
+                      className="group relative rounded bg-accent px-1.5 py-1 text-[11px] leading-tight text-accent-foreground"
                     >
                       <p className="truncate font-semibold">{e.title}</p>
                       <p className="truncate opacity-75">{formatTime(e.start)}</p>
+                      {e.description && (
+                        <div
+                          role="tooltip"
+                          className="pointer-events-none absolute left-0 top-full z-50 mt-1 hidden w-56 rounded-md border border-border bg-popover p-3 text-xs leading-relaxed text-popover-foreground shadow-lg group-hover:block group-focus-visible:block"
+                        >
+                          {e.description}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

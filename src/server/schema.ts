@@ -11,7 +11,7 @@ import {
 } from "@/lib/campus-data";
 import { hashPassword } from "./crypto";
 
-export const DB_VERSION = 9;
+export const DB_VERSION = 10;
 
 export type SchoolRecord = {
   id: string;
@@ -92,6 +92,7 @@ export type EventRecord = {
   start: string;
   end: string;
   location: string;
+  description?: string;
 };
 
 export type AnnouncementRecord = {

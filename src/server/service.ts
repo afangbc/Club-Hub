@@ -1192,6 +1192,7 @@ export async function createEvent(input: {
   start: string;
   end: string;
   location: string;
+  description?: string;
 }): Promise<Result> {
   const { user, error } = await requireEnrolled();
   if (!user) return fail(error);
@@ -1225,6 +1226,9 @@ export async function createEvent(input: {
       start,
       end,
       location: input.location.trim(),
+      ...(input.description?.trim()
+        ? { description: input.description.trim().slice(0, 500) }
+        : {}),
     });
     return ok;
   });
