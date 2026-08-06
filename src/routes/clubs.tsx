@@ -3,7 +3,7 @@ import { Lock, Globe, Search, Check, Clock } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { SmoothCollapse } from "@/components/SmoothCollapse";
-import { CATEGORIES, SCHOOL, type Club } from "@/lib/campus-data";
+import { CATEGORIES, type Club } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/clubs")({
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/clubs")({
 const categories = ["All", ...CATEGORIES] as const;
 
 function ClubsPage() {
-  const { clubs } = useSession();
+  const { clubs, school } = useSession();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<(typeof categories)[number]>("All");
 
@@ -51,8 +51,7 @@ function ClubsPage() {
     <div>
       <h1 className="text-4xl">Club Directory</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Every club and team at {SCHOOL.name} is listed here — private ones too. Club gatekeeping is
-        bad.
+        Every club at {school?.name ?? "your school"} is listed here — private ones too.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">

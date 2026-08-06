@@ -9,7 +9,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
-import { SCHOOL, roleLabel } from "@/lib/campus-data";
+import { roleLabel } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 const nav = [
@@ -21,7 +21,7 @@ const nav = [
 ] as const;
 
 export function StaffShell({ children }: { children: ReactNode }) {
-  const { session, joined, ready, signOut } = useSession();
+  const { session, school, joined, ready, signOut } = useSession();
   const navigate = useNavigate();
   const allowed =
     session?.role === "teacher" && session.status === "active" && session.emailVerified && joined;
@@ -51,7 +51,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <span className="hidden text-xs uppercase tracking-widest opacity-60 sm:inline">
-            {SCHOOL.name} · {SCHOOL.district}
+            {school?.name} · {school?.district}
           </span>
           <div className="ml-auto mr-12 flex items-center gap-2">
             <div className="hidden text-right sm:block">

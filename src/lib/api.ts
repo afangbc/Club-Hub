@@ -1,5 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
-import { normalizeSchedule, type ClubCategory, type MeetingSchedule, type Prefs, type Role } from "./campus-data";
+import {
+  normalizeSchedule,
+  type ClubCategory,
+  type MeetingSchedule,
+  type Prefs,
+  type Role,
+} from "./campus-data";
 import type { AppState, ClubInput, CreateSchoolResult, Result } from "@/server/service";
 
 /**
@@ -24,8 +30,15 @@ export const getState = createServerFn({ method: "GET" }).handler(async (): Prom
 });
 
 export const signUpFn = createServerFn({ method: "POST" })
-  .inputValidator(
-    (d: { name: string; email: string; role: Role; grade: string; password: string; schoolCode: string }) => {
+  .validator(
+    (d: {
+      name: string;
+      email: string;
+      role: Role;
+      grade: string;
+      password: string;
+      schoolCode: string;
+    }) => {
       const raw = (d ?? {}) as Partial<typeof d>;
       return {
         name: str(raw.name, 120),
@@ -43,7 +56,7 @@ export const signUpFn = createServerFn({ method: "POST" })
   });
 
 export const signInFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { email: string; password: string }) => {
+  .validator((d: { email: string; password: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     return { email: str(raw.email, 200), password: str(raw.password, 200) };
   })
@@ -58,7 +71,7 @@ export const signOutFn = createServerFn({ method: "POST" }).handler(async (): Pr
 });
 
 export const verifyEmailFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { code: string }) => ({ code: str((d ?? {}).code, 6) }))
+  .validator((d: { code: string }) => ({ code: str((d ?? {}).code, 6) }))
   .handler(async ({ data }): Promise<Result> => {
     const { verifyEmail } = await import("@/server/service");
     return verifyEmail(data);
@@ -72,14 +85,14 @@ export const resendVerificationFn = createServerFn({ method: "POST" }).handler(
 );
 
 export const joinSchoolFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { code: string }) => ({ code: str((d ?? {}).code, 40) }))
+  .validator((d: { code: string }) => ({ code: str((d ?? {}).code, 40) }))
   .handler(async ({ data }): Promise<Result> => {
     const { joinSchool } = await import("@/server/service");
     return joinSchool(data);
   });
 
 export const createTeamFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { name: string; sport: string }) => {
+  .validator((d: { name: string; sport: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     return { name: str(raw.name, 100), sport: str(raw.sport, 80) };
   })
@@ -89,44 +102,64 @@ export const createTeamFn = createServerFn({ method: "POST" })
   });
 
 export const joinTeamFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { code: string }) => ({ code: str((d ?? {}).code, 40) }))
+  .validator((d: { code: string }) => ({ code: str((d ?? {}).code, 40) }))
   .handler(async ({ data }): Promise<Result> => {
     const { joinTeam } = await import("@/server/service");
     return joinTeam(data);
   });
 
 export const createSchoolFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { name: string; mascot: string; district: string; primaryColor: string; secondaryColor: string }) => {
-    const raw = (d ?? {}) as Partial<typeof d>;
-    return {
-      name: str(raw.name, 120),
-      mascot: str(raw.mascot, 80),
-      district: str(raw.district, 120),
-      primaryColor: str(raw.primaryColor, 7),
-      secondaryColor: str(raw.secondaryColor, 7),
-    };
-  })
+  .validator(
+    (d: {
+      name: string;
+      mascot: string;
+      district: string;
+      primaryColor: string;
+      secondaryColor: string;
+    }) => {
+      const raw = (d ?? {}) as Partial<typeof d>;
+      return {
+        name: str(raw.name, 120),
+        mascot: str(raw.mascot, 80),
+        district: str(raw.district, 120),
+        primaryColor: str(raw.primaryColor, 7),
+        secondaryColor: str(raw.secondaryColor, 7),
+      };
+    },
+  )
   .handler(async ({ data }): Promise<CreateSchoolResult> => {
     const { createSchool } = await import("@/server/service");
     return createSchool(data);
   });
 
 export const requestAdminFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { name: string; mascot: string; district: string; primaryColor: string; secondaryColor: string; message: string }) => {
-    const raw = (d ?? {}) as Partial<typeof d>;
-    return {
-      name: str(raw.name, 120), mascot: str(raw.mascot, 80), district: str(raw.district, 120),
-      primaryColor: str(raw.primaryColor, 7), secondaryColor: str(raw.secondaryColor, 7),
-      message: str(raw.message, 1000),
-    };
-  })
+  .validator(
+    (d: {
+      name: string;
+      mascot: string;
+      district: string;
+      primaryColor: string;
+      secondaryColor: string;
+      message: string;
+    }) => {
+      const raw = (d ?? {}) as Partial<typeof d>;
+      return {
+        name: str(raw.name, 120),
+        mascot: str(raw.mascot, 80),
+        district: str(raw.district, 120),
+        primaryColor: str(raw.primaryColor, 7),
+        secondaryColor: str(raw.secondaryColor, 7),
+        message: str(raw.message, 1000),
+      };
+    },
+  )
   .handler(async ({ data }): Promise<Result> => {
     const { requestAdmin } = await import("@/server/service");
     return requestAdmin(data);
   });
 
 export const reviewAdminRequestFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; approve: boolean }) => {
+  .validator((d: { id: string; approve: boolean }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     return { id: str(raw.id, 60), approve: flag(raw.approve) };
   })
@@ -136,14 +169,14 @@ export const reviewAdminRequestFn = createServerFn({ method: "POST" })
   });
 
 export const revokeAdminFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { userId: string }) => ({ userId: str((d ?? {}).userId, 60) }))
+  .validator((d: { userId: string }) => ({ userId: str((d ?? {}).userId, 60) }))
   .handler(async ({ data }): Promise<Result> => {
     const { revokeAdmin } = await import("@/server/service");
     return revokeAdmin(data);
   });
 
 export const updateProfileFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { name: string; email: string }) => {
+  .validator((d: { name: string; email: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     return { name: str(raw.name, 120), email: str(raw.email, 200) };
   })
@@ -153,7 +186,7 @@ export const updateProfileFn = createServerFn({ method: "POST" })
   });
 
 export const changePasswordFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { current: string; next: string; confirm: string }) => {
+  .validator((d: { current: string; next: string; confirm: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     return {
       current: str(raw.current, 200),
@@ -167,7 +200,7 @@ export const changePasswordFn = createServerFn({ method: "POST" })
   });
 
 export const updatePrefFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { key: keyof Prefs; value: boolean }) => {
+  .validator((d: { key: keyof Prefs; value: boolean }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     return { key: str(raw.key, 40) as keyof Prefs, value: flag(raw.value) };
   })
@@ -184,21 +217,21 @@ export const deleteAccountFn = createServerFn({ method: "POST" }).handler(
 );
 
 export const joinClubFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { clubId: string }) => ({ clubId: str((d ?? {}).clubId, 60) }))
+  .validator((d: { clubId: string }) => ({ clubId: str((d ?? {}).clubId, 60) }))
   .handler(async ({ data }): Promise<Result> => {
     const { joinClub } = await import("@/server/service");
     return joinClub(data);
   });
 
 export const leaveClubFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { clubId: string }) => ({ clubId: str((d ?? {}).clubId, 60) }))
+  .validator((d: { clubId: string }) => ({ clubId: str((d ?? {}).clubId, 60) }))
   .handler(async ({ data }): Promise<Result> => {
     const { leaveClub } = await import("@/server/service");
     return leaveClub(data);
   });
 
 export const requestClubFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { clubId: string; note: string }) => {
+  .validator((d: { clubId: string; note: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     return { clubId: str(raw.clubId, 60), note: str(raw.note, 400) };
   })
@@ -208,7 +241,7 @@ export const requestClubFn = createServerFn({ method: "POST" })
   });
 
 export const reviewMembershipFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; approve: boolean }) => {
+  .validator((d: { id: string; approve: boolean }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     return { id: str(raw.id, 60), approve: flag(raw.approve) };
   })
@@ -232,14 +265,14 @@ function clubInput(raw: Partial<ClubInput>): Required<ClubInput> {
 }
 
 export const createClubFn = createServerFn({ method: "POST" })
-  .inputValidator((d: ClubInput) => clubInput((d ?? {}) as Partial<ClubInput>))
+  .validator((d: ClubInput) => clubInput((d ?? {}) as Partial<ClubInput>))
   .handler(async ({ data }): Promise<Result> => {
     const { createClub } = await import("@/server/service");
     return createClub(data);
   });
 
 export const updateClubFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; patch: Partial<ClubInput> }) => {
+  .validator((d: { id: string; patch: Partial<ClubInput> }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     const patch = (raw.patch ?? {}) as Partial<ClubInput>;
     const shaped = clubInput(patch);
@@ -259,14 +292,14 @@ export const updateClubFn = createServerFn({ method: "POST" })
   });
 
 export const deleteClubFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string }) => ({ id: str((d ?? {}).id, 60) }))
+  .validator((d: { id: string }) => ({ id: str((d ?? {}).id, 60) }))
   .handler(async ({ data }): Promise<Result> => {
     const { deleteClub } = await import("@/server/service");
     return deleteClub(data);
   });
 
 export const createEventFn = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (d: {
       clubId?: string;
       teamId?: string;
@@ -294,16 +327,21 @@ export const createEventFn = createServerFn({ method: "POST" })
   });
 
 export const deleteEventFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string }) => ({ id: str((d ?? {}).id, 60) }))
+  .validator((d: { id: string }) => ({ id: str((d ?? {}).id, 60) }))
   .handler(async ({ data }): Promise<Result> => {
     const { deleteEvent } = await import("@/server/service");
     return deleteEvent(data);
   });
 
 export const createAnnouncementFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { clubId?: string; teamId?: string; title: string; body: string }) => {
+  .validator((d: { clubId?: string; teamId?: string; title: string; body: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
-    return { clubId: str(raw.clubId, 60), teamId: str(raw.teamId, 60), title: str(raw.title, 120), body: str(raw.body, 2000) };
+    return {
+      clubId: str(raw.clubId, 60),
+      teamId: str(raw.teamId, 60),
+      title: str(raw.title, 120),
+      body: str(raw.body, 2000),
+    };
   })
   .handler(async ({ data }): Promise<Result> => {
     const { createAnnouncement } = await import("@/server/service");
@@ -311,14 +349,14 @@ export const createAnnouncementFn = createServerFn({ method: "POST" })
   });
 
 export const deleteAnnouncementFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string }) => ({ id: str((d ?? {}).id, 60) }))
+  .validator((d: { id: string }) => ({ id: str((d ?? {}).id, 60) }))
   .handler(async ({ data }): Promise<Result> => {
     const { deleteAnnouncement } = await import("@/server/service");
     return deleteAnnouncement(data);
   });
 
 export const reviewStaffFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { userId: string; approve: boolean }) => {
+  .validator((d: { userId: string; approve: boolean }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     return { userId: str(raw.userId, 60), approve: flag(raw.approve) };
   })
@@ -328,14 +366,14 @@ export const reviewStaffFn = createServerFn({ method: "POST" })
   });
 
 export const setSchoolCodeFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { code: string }) => ({ code: str((d ?? {}).code, 40) }))
+  .validator((d: { code: string }) => ({ code: str((d ?? {}).code, 40) }))
   .handler(async ({ data }): Promise<Result> => {
     const { setSchoolCode } = await import("@/server/service");
     return setSchoolCode(data);
   });
 
 export const setSchoolColorsFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { primaryColor: string; secondaryColor: string }) => {
+  .validator((d: { primaryColor: string; secondaryColor: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     return { primaryColor: str(raw.primaryColor, 7), secondaryColor: str(raw.secondaryColor, 7) };
   })

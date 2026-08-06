@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Clock, RefreshCw, ShieldX } from "lucide-react";
 import { useEffect } from "react";
-import { SCHOOL, homeFor, roleLabel } from "@/lib/campus-data";
+import { homeFor, roleLabel } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/pending")({
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/pending")({
 });
 
 function Pending() {
-  const { session, ready, signOut, refresh } = useSession();
+  const { session, school, ready, signOut, refresh } = useSession();
   const navigate = useNavigate();
   const waiting = session
     ? session.emailVerified && session.role !== "student" && session.status !== "active"
@@ -51,13 +51,14 @@ function Pending() {
         <p className="mt-2 text-sm text-muted-foreground">
           {denied ? (
             <>
-              A {SCHOOL.name} admin declined this staff account. Stop by the front office if you
-              think that's a mistake — an admin can reinstate you in ClubHub.
+              A {school?.name ?? "school"} admin declined this staff account. Stop by the front
+              office if you think that's a mistake — an admin can reinstate you in ClubHub.
             </>
           ) : (
             <>
-              Hi {session.name} — your staff account for {SCHOOL.name} is in the admin queue. Once
-              it's approved you can create clubs, post meetings, and send announcements.
+              Hi {session.name} — your staff account for {school?.name ?? "your school"} is in the
+              admin queue. Once it's approved you can create clubs, post meetings, and send
+              announcements.
             </>
           )}
         </p>

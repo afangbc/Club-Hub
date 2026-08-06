@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, RotateCcw, Trophy, Users, X } from "lucide-react";
 import { useState } from "react";
-import { SCHOOL, roleLabel, type StaffAccount } from "@/lib/campus-data";
+import { roleLabel, type StaffAccount } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/admin/teachers")({
@@ -36,8 +36,8 @@ function AdminStaff() {
     <div className="max-w-3xl">
       <h1 className="text-4xl">Staff accounts</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Anyone with an @{SCHOOL.staffDomain} address can request a teacher or admin account. They
-        stay locked out of the staff consoles until you approve them here.
+        Teachers who join with your campus code stay locked out of the sponsor console until you
+        approve them here.
       </p>
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
@@ -157,6 +157,34 @@ function Row({
   );
 }
 
-function Sponsorship({ icon: Icon, label, names }: { icon: typeof Users; label: string; names: string[] }) {
-  return <div className="flex items-start gap-2"><Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><div><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p><div className="mt-1 flex flex-wrap gap-1.5">{names.length ? names.map((name) => <span key={name} className="rounded-full bg-secondary px-2 py-1 text-xs font-medium">{name}</span>) : <span className="text-xs text-muted-foreground">None</span>}</div></div></div>;
+function Sponsorship({
+  icon: Icon,
+  label,
+  names,
+}: {
+  icon: typeof Users;
+  label: string;
+  names: string[];
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </p>
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {names.length ? (
+            names.map((name) => (
+              <span key={name} className="rounded-full bg-secondary px-2 py-1 text-xs font-medium">
+                {name}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-muted-foreground">None</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

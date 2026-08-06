@@ -179,8 +179,14 @@ function RequestCard({
       </p>
       <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
         <span>Mascot: {request.mascot}</span>
-        <span className="size-5 rounded-full border border-border" style={{ backgroundColor: request.primaryColor }} />
-        <span className="size-5 rounded-full border border-border" style={{ backgroundColor: request.secondaryColor }} />
+        <span
+          className="size-5 rounded-full border border-border"
+          style={{ backgroundColor: request.primaryColor }}
+        />
+        <span
+          className="size-5 rounded-full border border-border"
+          style={{ backgroundColor: request.secondaryColor }}
+        />
       </div>
     </li>
   );
@@ -263,7 +269,13 @@ function NewSchool() {
           e.preventDefault();
           if (busy) return;
           setBusy(true);
-          const result = await createSchool({ name, district, mascot, primaryColor, secondaryColor });
+          const result = await createSchool({
+            name,
+            district,
+            mascot,
+            primaryColor,
+            secondaryColor,
+          });
           setBusy(false);
           setError(result.error ?? "");
           if (!result.error) {
@@ -272,8 +284,18 @@ function NewSchool() {
           }
         }}
       >
-        <TextField label="School name" value={name} onChange={setName} placeholder="Lebanon Trail High School" />
-        <TextField label="District" value={district} onChange={setDistrict} placeholder="Frisco ISD" />
+        <TextField
+          label="School name"
+          value={name}
+          onChange={setName}
+          placeholder="Lebanon Trail High School"
+        />
+        <TextField
+          label="District"
+          value={district}
+          onChange={setDistrict}
+          placeholder="Example ISD"
+        />
         <TextField label="Mascot" value={mascot} onChange={setMascot} placeholder="Trailblazers" />
         {error && <p className="text-sm text-destructive md:col-span-3">{error}</p>}
         <div className="flex gap-2 md:col-span-3">

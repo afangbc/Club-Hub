@@ -105,18 +105,31 @@ async function migrate(parsed: LegacyDatabase): Promise<Database> {
         name: club.name,
         sport: club.name,
         sponsorId: club.sponsorId,
-        joinCode: `TEAM-${club.id.replace(/[^a-z0-9]/gi, "").slice(-4).toUpperCase().padStart(4, "0")}`,
+        joinCode: `TEAM-${club.id
+          .replace(/[^a-z0-9]/gi, "")
+          .slice(-4)
+          .toUpperCase()
+          .padStart(4, "0")}`,
         createdAt: club.createdAt,
       });
-      for (const member of next.memberships.filter((item) => item.clubId === club.id && item.status === "member"))
-        next.teamMemberships.push({ id: `tm_${member.id}`, teamId, userId: member.userId, createdAt: member.createdAt });
+      for (const member of next.memberships.filter(
+        (item) => item.clubId === club.id && item.status === "member",
+      ))
+        next.teamMemberships.push({
+          id: `tm_${member.id}`,
+          teamId,
+          userId: member.userId,
+          createdAt: member.createdAt,
+        });
     }
   }
   const athleticIds = new Set(athleticClubs.map((club) => club.id));
   next.clubs = next.clubs.filter((club) => !athleticIds.has(club.id));
   next.memberships = next.memberships.filter((item) => !athleticIds.has(item.clubId));
   next.events = next.events.filter((event) => !event.clubId || !athleticIds.has(event.clubId));
-  next.announcements = next.announcements.filter((announcement) => !announcement.clubId || !athleticIds.has(announcement.clubId));
+  next.announcements = next.announcements.filter(
+    (announcement) => !announcement.clubId || !athleticIds.has(announcement.clubId),
+  );
   delete next.schoolVerifications;
   next.version = DB_VERSION;
   return next as Database;
@@ -128,7 +141,7 @@ async function load(): Promise<Database> {
   const driver = await getStorageDriver();
   const raw = await driver.read();
 
-  if (raw) {
+  if (raw !== null) {
     try {
       const parsed = JSON.parse(raw) as LegacyDatabase;
       if (parsed.version === DB_VERSION) return parsed;
@@ -138,11 +151,16 @@ async function load(): Promise<Database> {
         console.info(`[clubhub] Migrated database to version ${DB_VERSION}.`);
         return migrated;
       }
-      console.warn(
-        `[clubhub] Database is version ${parsed.version}, expected ${DB_VERSION}. Reseeding.`,
+      throw new Error(
+        `[clubhub] Database is version ${String(parsed.version)}, but this build expects ${DB_VERSION}. Refusing to overwrite it.`,
       );
-    } catch {
-      console.warn("[clubhub] Database file is unreadable. Reseeding.");
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error("[clubhub] The database is unreadable. Refusing to overwrite it.", {
+          cause: error,
+        });
+      }
+      throw error;
     }
   }
 
@@ -176,15 +194,14 @@ async function persist(db: Database): Promise<void> {
 export function transaction<T>(mutate: (db: Database) => T | Promise<T>): Promise<T> {
   const run = async (): Promise<T> => {
     const db = await getDatabase();
-    let result: T;
     try {
-      result = await mutate(db);
+      const result = await mutate(db);
+      await persist(db);
+      return result;
     } catch (error) {
       ready = null;
       throw error;
     }
-    await persist(db);
-    return result;
   };
 
   const next = writeChain.then(run, run);

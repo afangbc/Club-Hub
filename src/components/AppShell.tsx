@@ -1,7 +1,16 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, CalendarDays, Compass, LogOut, Settings, ShieldCheck, Trophy, Users } from "lucide-react";
+import {
+  Bell,
+  CalendarDays,
+  Compass,
+  LogOut,
+  Settings,
+  ShieldCheck,
+  Trophy,
+  Users,
+} from "lucide-react";
 import { useEffect, type ReactNode } from "react";
-import { SCHOOL, homeFor, roleLabel } from "@/lib/campus-data";
+import { homeFor, roleLabel } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 const nav = [
@@ -13,7 +22,7 @@ const nav = [
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { session, joined, ready, signOut } = useSession();
+  const { session, school, joined, ready, signOut } = useSession();
   const navigate = useNavigate();
   const isStaff = session?.role === "teacher" || session?.role === "admin";
   const isAdmin = session?.role === "admin" && session.status === "active";
@@ -40,7 +49,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="font-display text-2xl leading-none">ClubHub</span>
           </Link>
           <span className="hidden text-xs uppercase tracking-widest opacity-70 sm:inline">
-            {SCHOOL.name} · {SCHOOL.district}
+            {school?.name} · {school?.district}
           </span>
           <div className="ml-auto mr-12 flex items-center gap-3">
             <div className="hidden text-right sm:block">

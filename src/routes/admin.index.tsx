@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Building2, CalendarDays, Copy, RefreshCw, UserCog, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { TextField } from "@/components/form-fields";
-import { SCHOOL } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/admin/")({
@@ -12,7 +11,7 @@ export const Route = createFileRoute("/admin/")({
       {
         name: "description",
         content:
-          "Issue the campus access code, review every club, and approve staff accounts for Frisco High School.",
+          "Issue the campus access code, review every club, and approve staff accounts for your school.",
       },
       { property: "og:title", content: "Campus Console — ClubHub Admin" },
       { property: "og:description", content: "Run ClubHub for your whole campus." },
@@ -21,11 +20,13 @@ export const Route = createFileRoute("/admin/")({
   component: AdminHome,
 });
 
-const WORDS = ["RACCOONS", "FRISCO", "FIGHTING", "BLUEGOLD", "COONS"];
-
-function randomCode() {
-  const word = WORDS[Math.floor(Math.random() * WORDS.length)];
-  return `${word}${Math.floor(10 + Math.random() * 90)}`;
+function randomCode(schoolName = "CAMPUS") {
+  const word =
+    schoolName
+      .replace(/[^a-z0-9]/gi, "")
+      .slice(0, 8)
+      .toUpperCase() || "CAMPUS";
+  return `${word}-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
 function AdminHome() {
@@ -74,8 +75,8 @@ function AdminHome() {
     <div>
       <h1 className="text-4xl">Campus console</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        {school?.name ?? SCHOOL.name} · {school?.district ?? SCHOOL.district} — you control the access code, the club list, and who gets
-        a sponsor account.
+        {school?.name ?? "Your school"} · {school?.district ?? "Your district"} — you control the
+        access code, the club list, and who gets a sponsor account.
       </p>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -111,7 +112,7 @@ function AdminHome() {
           </button>
           <button
             disabled={busy}
-            onClick={() => void save(randomCode())}
+            onClick={() => void save(randomCode(school?.name))}
             className="flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-60"
           >
             <RefreshCw className="size-4" /> Generate new
@@ -130,7 +131,7 @@ function AdminHome() {
               label="Set a custom code"
               value={draft}
               onChange={(v) => setDraft(v.toUpperCase())}
-              placeholder={SCHOOL.defaultJoinCode}
+              placeholder="YOUR-SCHOOL-2026"
             />
           </div>
           <button
@@ -185,7 +186,10 @@ function AdminHome() {
               </span>
               <span className="font-semibold">{a.title}</span>
               <span className="text-xs text-muted-foreground">
-                {(a.clubId ? clubs.find((club) => club.id === a.clubId)?.name : teams.find((team) => team.id === a.teamId)?.name)} · {a.author}
+                {a.clubId
+                  ? clubs.find((club) => club.id === a.clubId)?.name
+                  : teams.find((team) => team.id === a.teamId)?.name}{" "}
+                · {a.author}
               </span>
             </li>
           ))}
@@ -229,25 +233,46 @@ function SchoolBranding() {
           setBusy(true);
           const error = await updateSchoolColors({ primaryColor, secondaryColor });
           setBusy(false);
-          setMessage(error ? { ok: false, text: error } : { ok: true, text: "School colors saved." });
+          setMessage(
+            error ? { ok: false, text: error } : { ok: true, text: "School colors saved." },
+          );
         }}
       >
         <ColorPicker label="Primary color" value={primaryColor} onChange={setPrimaryColor} />
         <ColorPicker label="Accent color" value={secondaryColor} onChange={setSecondaryColor} />
-        <div className="flex h-12 overflow-hidden rounded-md border border-border" aria-label="Color preview">
+        <div
+          className="flex h-12 overflow-hidden rounded-md border border-border"
+          aria-label="Color preview"
+        >
           <span className="w-16" style={{ backgroundColor: primaryColor }} />
           <span className="w-16" style={{ backgroundColor: secondaryColor }} />
         </div>
-        <button type="submit" disabled={busy} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+        <button
+          type="submit"
+          disabled={busy}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+        >
           {busy ? "Saving…" : "Save colors"}
         </button>
       </form>
-      {message && <p className={`mt-3 text-sm ${message.ok ? "text-success" : "text-destructive"}`}>{message.text}</p>}
+      {message && (
+        <p className={`mt-3 text-sm ${message.ok ? "text-success" : "text-destructive"}`}>
+          {message.text}
+        </p>
+      )}
     </section>
   );
 }
 
-function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function ColorPicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
   const [hex, setHex] = useState(value.toUpperCase());
   useEffect(() => setHex(value.toUpperCase()), [value]);
   const updateHex = (next: string) => {
@@ -257,9 +282,16 @@ function ColorPicker({ label, value, onChange }: { label: string; value: string;
   };
   return (
     <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
       <span className="mt-1 flex items-center gap-2 rounded-md border border-input bg-card p-2">
-        <input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-8 w-12 cursor-pointer border-0 bg-transparent" />
+        <input
+          type="color"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-8 w-12 cursor-pointer border-0 bg-transparent"
+        />
         <input
           type="text"
           value={hex}

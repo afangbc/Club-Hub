@@ -37,4 +37,11 @@ export default tseslint.config(
     },
   },
   eslintPluginPrettier,
+  {
+    rules: {
+      // Formatting is handled separately. Keeping it out of lint prevents
+      // Windows line endings from hiding actual code-quality failures.
+      "prettier/prettier": "off",
+    },
+  },
 );

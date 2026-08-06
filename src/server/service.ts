@@ -51,7 +51,13 @@ const BAD_CREDENTIALS = "That email and password don't match an account.";
 export type AppState = {
   user: Session | null;
   prefs: Prefs;
-  school: { name: string; mascot: string; district: string; primaryColor: string; secondaryColor: string } | null;
+  school: {
+    name: string;
+    mascot: string;
+    district: string;
+    primaryColor: string;
+    secondaryColor: string;
+  } | null;
   clubs: Club[];
   teams: Team[];
   events: ClubEvent[];
@@ -270,8 +276,20 @@ export async function loadState(): Promise<AppState> {
   // Signed in, but not through the campus code screen yet.
   const school = db.schools.find((candidate) => candidate.id === user.schoolId);
   if (!school) return empty;
-  // Staff waiting on approval get their own status back and nothing else.
-  if (user.role !== "student" && user.status !== "active") return empty;
+  // Staff waiting on approval can see which campus is reviewing them, but no
+  // campus data or management controls.
+  if (user.role !== "student" && user.status !== "active") {
+    return {
+      ...empty,
+      school: {
+        name: school.name,
+        mascot: school.mascot,
+        district: school.district,
+        primaryColor: school.primaryColor,
+        secondaryColor: school.secondaryColor,
+      },
+    };
+  }
 
   const clubs = db.clubs.filter((c) => c.schoolId === school.id && c.category !== "Athletics");
   const schoolTeams = db.teams.filter((team) => team.schoolId === school.id);
@@ -279,7 +297,11 @@ export async function loadState(): Promise<AppState> {
     db.teamMemberships.filter((member) => member.userId === user.id).map((member) => member.teamId),
   );
   const visibleTeams = schoolTeams.filter((team) =>
-    user.role === "admin" ? true : user.role === "teacher" ? team.sponsorId === user.id : joinedTeamIds.has(team.id),
+    user.role === "admin"
+      ? true
+      : user.role === "teacher"
+        ? team.sponsorId === user.id
+        : joinedTeamIds.has(team.id),
   );
   const visibleTeamIds = new Set(visibleTeams.map((team) => team.id));
   const mine = db.memberships.filter((m) => m.userId === user.id);
@@ -351,7 +373,9 @@ export async function loadState(): Promise<AppState> {
     clubs: clubs.map((c) => toClub(db, c)),
     teams: visibleTeams.map((team) => toTeam(db, team, user)),
     events: db.events.filter((event) =>
-      event.teamId ? visibleTeamIds.has(event.teamId) : clubs.some((club) => club.id === event.clubId),
+      event.teamId
+        ? visibleTeamIds.has(event.teamId)
+        : clubs.some((club) => club.id === event.clubId),
     ),
     announcements: visibleAnnouncements
       .map((a) => ({
@@ -393,8 +417,17 @@ export async function createTeam(input: { name: string; sport: string }): Promis
     if (db.teams.some((team) => team.schoolId === user.schoolId && norm(team.name) === norm(name)))
       return fail("A team with that name already exists at your school.");
     let joinCode = generateTeamCode();
-    while (db.teams.some((team) => norm(team.joinCode) === norm(joinCode))) joinCode = generateTeamCode();
-    db.teams.push({ id: newId("team"), schoolId: user.schoolId!, name, sport, sponsorId: user.id, joinCode, createdAt: new Date().toISOString() });
+    while (db.teams.some((team) => norm(team.joinCode) === norm(joinCode)))
+      joinCode = generateTeamCode();
+    db.teams.push({
+      id: newId("team"),
+      schoolId: user.schoolId!,
+      name,
+      sport,
+      sponsorId: user.id,
+      joinCode,
+      createdAt: new Date().toISOString(),
+    });
     return ok;
   });
 }
@@ -405,10 +438,18 @@ export async function joinTeam(input: { code: string }): Promise<Result> {
   if (user.role !== "student") return fail("Only student accounts join teams with a code.");
   const code = norm(input.code);
   return transaction((db) => {
-    const team = db.teams.find((candidate) => candidate.schoolId === user.schoolId && norm(candidate.joinCode) === code);
+    const team = db.teams.find(
+      (candidate) => candidate.schoolId === user.schoolId && norm(candidate.joinCode) === code,
+    );
     if (!team) return fail("That team code isn't valid for your school.");
-    if (db.teamMemberships.some((member) => member.teamId === team.id && member.userId === user.id)) return ok;
-    db.teamMemberships.push({ id: newId("tm"), teamId: team.id, userId: user.id, createdAt: new Date().toISOString() });
+    if (db.teamMemberships.some((member) => member.teamId === team.id && member.userId === user.id))
+      return ok;
+    db.teamMemberships.push({
+      id: newId("tm"),
+      teamId: team.id,
+      userId: user.id,
+      createdAt: new Date().toISOString(),
+    });
     return ok;
   });
 }
@@ -442,9 +483,10 @@ export async function signUp(input: {
   if (passwordError) return fail(passwordError);
 
   const signupDb = await getDatabase();
-  const studentSchool = input.role === "student" && !privileged
-    ? signupDb.schools.find((school) => norm(school.joinCode) === norm(input.schoolCode))
-    : null;
+  const studentSchool =
+    input.role === "student" && !privileged
+      ? signupDb.schools.find((school) => norm(school.joinCode) === norm(input.schoolCode))
+      : null;
   if (input.role === "student" && !privileged && !studentSchool)
     return fail("Enter the school code your school gave you.");
 
@@ -545,7 +587,8 @@ export async function verifyEmail(input: { code: string }): Promise<Result> {
     const record = db.emailVerifications.find((item) => item.userId === user.id);
     if (!record) return fail("That code expired. Ask for a new one.");
     if (record.email !== norm(user.email)) return fail("Your email changed. Ask for a new code.");
-    if (Date.parse(record.expiresAt) < Date.now()) return fail("That code expired. Ask for a new one.");
+    if (Date.parse(record.expiresAt) < Date.now())
+      return fail("That code expired. Ask for a new one.");
     if (record.attempts >= MAX_CODE_ATTEMPTS) return fail("Too many tries. Ask for a new code.");
 
     record.attempts += 1;
@@ -595,6 +638,9 @@ export async function joinSchool(input: { code: string }): Promise<Result> {
   const user = await currentUser();
   if (!user) return fail("You're signed out. Sign in and try again.");
   if (!user.emailVerified) return fail("Confirm your email address first.");
+  if (user.role === "admin")
+    return fail("School admins receive a campus when a ClubHub owner approves their application.");
+  if (user.schoolId) return fail("Your account already belongs to a campus.");
 
   const db = await getDatabase();
   const school = db.schools.find((candidate) => norm(candidate.joinCode) === norm(input.code));
@@ -630,7 +676,11 @@ function validateSchoolSetup(input: SchoolSetupInput): string | null {
 }
 
 function schoolCode(name: string): string {
-  const prefix = name.replace(/[^a-z0-9]/gi, "").slice(0, 5).toUpperCase() || "SCHOOL";
+  const prefix =
+    name
+      .replace(/[^a-z0-9]/gi, "")
+      .slice(0, 5)
+      .toUpperCase() || "SCHOOL";
   const bytes = crypto.getRandomValues(new Uint32Array(1));
   return `${prefix}-${String((bytes[0] ?? 0) % 10000).padStart(4, "0")}`;
 }
@@ -688,12 +738,18 @@ export async function requestAdmin(input: SchoolSetupInput & { message: string }
   const setupProblem = validateSchoolSetup(input);
   if (setupProblem) return fail(setupProblem);
   if (message.length < 20)
-    return fail("Tell us who you are at the school and why you should run it — at least a sentence.");
+    return fail(
+      "Tell us who you are at the school and why you should run it — at least a sentence.",
+    );
 
   return transaction((db) => {
     if (db.schools.some((school) => norm(school.name) === norm(input.name)))
       return fail("That school is already on ClubHub. New applications must be for a new school.");
-    if (db.adminRequests.some((request) => request.status === "pending" && norm(request.schoolName) === norm(input.name)))
+    if (
+      db.adminRequests.some(
+        (request) => request.status === "pending" && norm(request.schoolName) === norm(input.name),
+      )
+    )
       return fail("An application for that school is already waiting for review.");
     if (db.adminRequests.some((r) => r.userId === user.id && r.status === "pending"))
       return fail("You already have a request waiting on a ClubHub owner.");
@@ -725,7 +781,10 @@ export async function reviewAdminRequest(input: { id: string; approve: boolean }
 
     const account = db.users.find((u) => u.id === request.userId);
     if (!account) return fail("That account was deleted.");
-    if (input.approve && db.schools.some((school) => norm(school.name) === norm(request.schoolName)))
+    if (
+      input.approve &&
+      db.schools.some((school) => norm(school.name) === norm(request.schoolName))
+    )
       return fail("That school was created while this request was waiting.");
     request.status = input.approve ? "approved" : "denied";
     request.decidedAt = new Date().toISOString();
@@ -768,6 +827,16 @@ export async function revokeAdmin(input: { userId: string }): Promise<Result> {
     if (!account) return fail("That account no longer exists.");
     if (account.role !== "admin") return fail("That account isn't a school admin.");
     if (isOwner(account.email)) return fail("Owners are set in the environment, not here.");
+    if (
+      account.schoolId &&
+      db.users.filter(
+        (candidate) =>
+          candidate.schoolId === account.schoolId &&
+          candidate.role === "admin" &&
+          candidate.status === "active",
+      ).length <= 1
+    )
+      return fail("Approve another admin for this school before revoking its only administrator.");
 
     account.status = "denied";
     account.schoolId = null;
@@ -855,7 +924,21 @@ export async function deleteAccount(): Promise<Result> {
   const user = await currentUser();
   if (!user) return fail("You're signed out. Sign in and try again.");
 
+  const onlyAdminBlock = "__only_school_admin__";
   const sponsored = await transaction((db) => {
+    if (
+      user.role === "admin" &&
+      user.status === "active" &&
+      user.schoolId &&
+      db.users.filter(
+        (candidate) =>
+          candidate.schoolId === user.schoolId &&
+          candidate.role === "admin" &&
+          candidate.status === "active",
+      ).length <= 1
+    ) {
+      return [onlyAdminBlock];
+    }
     const owns = [
       ...db.clubs.filter((club) => club.sponsorId === user.id).map((club) => club.name),
       ...db.teams.filter((team) => team.sponsorId === user.id).map((team) => team.name),
@@ -866,9 +949,13 @@ export async function deleteAccount(): Promise<Result> {
     db.memberships = db.memberships.filter((m) => m.userId !== user.id);
     db.teamMemberships = db.teamMemberships.filter((membership) => membership.userId !== user.id);
     db.sessions = db.sessions.filter((s) => s.userId !== user.id);
+    db.emailVerifications = db.emailVerifications.filter((item) => item.userId !== user.id);
+    db.adminRequests = db.adminRequests.filter((request) => request.userId !== user.id);
     return [];
   });
 
+  if (sponsored.includes(onlyAdminBlock))
+    return fail("Approve another school admin before deleting the campus's only administrator account.");
   if (sponsored.length > 0)
     return fail(
       `Hand ${sponsored.join(", ")} to another sponsor before deleting your account — a school admin can reassign it.`,
@@ -1029,6 +1116,7 @@ export async function updateClub(input: {
     if (patch.name !== undefined) {
       const name = patch.name.trim();
       if (!name) return fail("Give the club a name.");
+      if (name.length > 80) return fail("Club names have to be under 80 characters.");
       if (
         db.clubs.some(
           (c) => c.id !== club.id && c.schoolId === club.schoolId && norm(c.name) === norm(name),
@@ -1046,7 +1134,11 @@ export async function updateClub(input: {
         return fail("Pick who can join.");
       club.visibility = patch.visibility;
     }
-    if (patch.room !== undefined) club.room = patch.room.trim();
+    if (patch.room !== undefined) {
+      const room = patch.room.trim();
+      if (!room) return fail("Add a room so students know where to show up.");
+      club.room = room;
+    }
     if (patch.schedule !== undefined) club.schedule = normalizeSchedule(patch.schedule);
     if (patch.blurb !== undefined) club.blurb = patch.blurb.trim();
     if (patch.joinInstructions !== undefined) {
@@ -1057,7 +1149,8 @@ export async function updateClub(input: {
     if (patch.sponsorId !== undefined && patch.sponsorId !== club.sponsorId) {
       if (user.role !== "admin") return fail("Only a school admin can reassign a sponsor.");
       const sponsor = db.users.find((u) => u.id === patch.sponsorId);
-      if (!sponsor || sponsor.schoolId !== user.schoolId || !isActiveStaff(sponsor)) return fail("Pick an approved sponsor.");
+      if (!sponsor || sponsor.schoolId !== user.schoolId || !isActiveStaff(sponsor))
+        return fail("Pick an approved sponsor.");
       club.sponsorId = sponsor.id;
     }
     return ok;
@@ -1105,8 +1198,12 @@ export async function createEvent(input: {
   if (end <= start) return fail("The meeting has to end after it starts.");
 
   return transaction((db) => {
-    const club = input.clubId ? db.clubs.find((candidate) => candidate.id === input.clubId) : undefined;
-    const team = input.teamId ? db.teams.find((candidate) => candidate.id === input.teamId) : undefined;
+    const club = input.clubId
+      ? db.clubs.find((candidate) => candidate.id === input.clubId)
+      : undefined;
+    const team = input.teamId
+      ? db.teams.find((candidate) => candidate.id === input.teamId)
+      : undefined;
     if ((!club && !team) || (club && team)) return fail("Pick one club or team.");
     if (club && !canManage(user, club)) return fail("You don't sponsor that club.");
     if (team && !canManageTeam(user, team)) return fail("You don't sponsor that team.");
@@ -1132,8 +1229,12 @@ export async function deleteEvent(input: { id: string }): Promise<Result> {
   return transaction((db) => {
     const event = db.events.find((e) => e.id === input.id);
     if (!event) return ok;
-    const club = event.clubId ? db.clubs.find((candidate) => candidate.id === event.clubId) : undefined;
-    const team = event.teamId ? db.teams.find((candidate) => candidate.id === event.teamId) : undefined;
+    const club = event.clubId
+      ? db.clubs.find((candidate) => candidate.id === event.clubId)
+      : undefined;
+    const team = event.teamId
+      ? db.teams.find((candidate) => candidate.id === event.teamId)
+      : undefined;
     if (club ? !canManage(user, club) : team ? !canManageTeam(user, team) : true)
       return fail("You don't manage that club or team.");
     db.events = db.events.filter((e) => e.id !== event.id);
@@ -1153,8 +1254,12 @@ export async function createAnnouncement(input: {
     return fail("Pick a club or team, then add a headline and a message.");
 
   return transaction((db) => {
-    const club = input.clubId ? db.clubs.find((candidate) => candidate.id === input.clubId) : undefined;
-    const team = input.teamId ? db.teams.find((candidate) => candidate.id === input.teamId) : undefined;
+    const club = input.clubId
+      ? db.clubs.find((candidate) => candidate.id === input.clubId)
+      : undefined;
+    const team = input.teamId
+      ? db.teams.find((candidate) => candidate.id === input.teamId)
+      : undefined;
     if ((!club && !team) || (club && team)) return fail("Pick one club or team.");
     if (club && !canManage(user, club)) return fail("You don't sponsor that club.");
     if (team && !canManageTeam(user, team)) return fail("You don't sponsor that team.");
@@ -1179,8 +1284,12 @@ export async function deleteAnnouncement(input: { id: string }): Promise<Result>
   return transaction((db) => {
     const post = db.announcements.find((a) => a.id === input.id);
     if (!post) return ok;
-    const club = post.clubId ? db.clubs.find((candidate) => candidate.id === post.clubId) : undefined;
-    const team = post.teamId ? db.teams.find((candidate) => candidate.id === post.teamId) : undefined;
+    const club = post.clubId
+      ? db.clubs.find((candidate) => candidate.id === post.clubId)
+      : undefined;
+    const team = post.teamId
+      ? db.teams.find((candidate) => candidate.id === post.teamId)
+      : undefined;
     if (club ? !canManage(user, club) : team ? !canManageTeam(user, team) : true)
       return fail("You don't manage that club or team.");
     db.announcements = db.announcements.filter((a) => a.id !== post.id);
@@ -1222,14 +1331,21 @@ export async function setSchoolCode(input: { code: string }): Promise<Result> {
   return transaction((db) => {
     const school = db.schools.find((candidate) => candidate.id === user.schoolId);
     if (!school) return fail("School not found.");
-    if (db.schools.some((candidate) => candidate.id !== school.id && norm(candidate.joinCode) === norm(code)))
+    if (
+      db.schools.some(
+        (candidate) => candidate.id !== school.id && norm(candidate.joinCode) === norm(code),
+      )
+    )
       return fail("That campus code is already in use.");
     school.joinCode = code;
     return ok;
   });
 }
 
-export async function setSchoolColors(input: { primaryColor: string; secondaryColor: string }): Promise<Result> {
+export async function setSchoolColors(input: {
+  primaryColor: string;
+  secondaryColor: string;
+}): Promise<Result> {
   const { user, error } = await requireEnrolled();
   if (!user) return fail(error);
   if (!isActiveAdmin(user)) return fail("Only a school admin can change school colors.");

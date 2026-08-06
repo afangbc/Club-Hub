@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { SCHOOL, roleLabel, type Prefs } from "@/lib/campus-data";
+import { roleLabel, type Prefs } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/account")({
@@ -59,6 +59,7 @@ function AccountPage() {
     deleteAccount,
     myClubs,
     schoolCode,
+    school,
   } = useSession();
   const navigate = useNavigate();
   const [name, setName] = useState(session?.name ?? "");
@@ -77,7 +78,7 @@ function AccountPage() {
     <div className="max-w-2xl">
       <h1 className="text-4xl">Account Settings</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        You're signed in as {roleLabel[session.role]} at {SCHOOL.name}.
+        You're signed in as {roleLabel[session.role]} at {school?.name ?? "your school"}.
       </p>
 
       <Section title="Profile" desc="How your name shows up on rosters and requests.">
@@ -169,8 +170,8 @@ function AccountPage() {
 
       <Section title="School" desc="ClubHub only ever shows clubs from your campus.">
         <dl className="grid gap-2 text-sm">
-          <Row k="School" v={`${SCHOOL.name} · ${SCHOOL.mascot}`} />
-          <Row k="District" v={SCHOOL.district} />
+          <Row k="School" v={school ? `${school.name} · ${school.mascot}` : "Not assigned"} />
+          <Row k="District" v={school?.district ?? "—"} />
           {schoolCode && <Row k="Access code" v={schoolCode} />}
           <Row k="Clubs joined" v={String(myClubs.length)} />
         </dl>
