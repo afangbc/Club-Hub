@@ -207,10 +207,7 @@ ClubHub stores its database as a single JSON document.
 
 ## Production
 
-Upstash Redis stores application records. Public Vercel Blob storage stores
-club-logo image files, while Redis keeps only their short CDN URLs. Existing
-inline Base64 logos remain readable and are moved to Blob the next time their
-club settings are saved.
+Upstash Redis
 
 The storage layer is implemented in:
 
@@ -221,11 +218,11 @@ src/server/storage.ts
 Delete `.data/clubhub.json` to reset to the populated Frisco High School demo.
 The seeded accounts below all use the password `raccoons26`:
 
-| Role         | Email                      |
-| ------------ | -------------------------- |
-| Student      | `student@demo.clubhub.app` |
-| Teacher      | `teacher@demo.clubhub.app` |
-| School admin | `admin@demo.clubhub.app`   |
+| Role | Email |
+| --- | --- |
+| Student | `student@demo.clubhub.app` |
+| Teacher | `teacher@demo.clubhub.app` |
+| School admin | `admin@demo.clubhub.app` |
 
 Upgrading an empty version-4 database restores this demo automatically. A
 database containing real users or clubs is never replaced with sample data.
@@ -400,8 +397,6 @@ CLUBHUB_OWNER_EMAILS
 RESEND_API_KEY
 
 CLUBHUB_FROM_EMAIL
-
-BLOB_READ_WRITE_TOKEN
 ```
 
 Optional:
