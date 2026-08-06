@@ -122,12 +122,22 @@ export function ClubForm({
             <div className="flex-1">
               <input
                 type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
+                accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/x-png,image/jpeg,image/webp,image/gif"
                 className="block w-full text-xs file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:font-semibold file:text-primary-foreground hover:file:bg-primary/90"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (!file) return;
-                  if (!["image/png", "image/jpeg", "image/webp", "image/gif"].includes(file.type)) {
+                  const extension = file.name.split(".").pop()?.toLowerCase();
+                  const mimeByExtension: Record<string, string> = {
+                    png: "image/png",
+                    jpg: "image/jpeg",
+                    jpeg: "image/jpeg",
+                    webp: "image/webp",
+                    gif: "image/gif",
+                  };
+                  const supportedType = ["image/png", "image/x-png", "image/jpeg", "image/webp", "image/gif"].includes(file.type);
+                  const supportedExtension = ["png", "jpg", "jpeg", "webp", "gif"].includes(extension ?? "");
+                  if (!supportedType && !supportedExtension) {
                     setLogoError("Choose a PNG, JPEG, WebP, or GIF image.");
                     return;
                   }
@@ -137,7 +147,9 @@ export function ClubForm({
                   }
                   const reader = new FileReader();
                   reader.onload = () => {
-                    setLogo(typeof reader.result === "string" ? reader.result : "");
+                    const result = typeof reader.result === "string" ? reader.result : "";
+                    const mime = file.type === "image/x-png" ? "image/png" : file.type || mimeByExtension[extension ?? ""];
+                    setLogo(mime ? result.replace(/^data:[^;]+;/i, `data:${mime};`) : result);
                     setLogoError("");
                   };
                   reader.onerror = () => setLogoError("That image could not be read.");
