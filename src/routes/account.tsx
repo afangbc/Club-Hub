@@ -115,13 +115,7 @@ function AccountPage() {
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Role
             </span>
-            <p className="text-sm">
-              {roleLabel[session.role]}
-              —{" "}
-              <span className="text-muted-foreground">
-                a school admin changes roles for the campus.
-              </span>
-            </p>
+            <p className="text-sm">{roleLabel[session.role]}</p>
           </div>
           <Msg msg={profileMsg} />
           <Primary>Save profile</Primary>
