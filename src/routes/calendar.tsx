@@ -244,7 +244,7 @@ function MeetingPanel({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="top" className="z-[110] max-h-[92vh] overflow-y-auto border-b-4 border-primary bg-background p-0 [&>button]:right-24 [&>button]:top-5">
+      <SheetContent side="top" className="z-[110] max-h-[92vh] overflow-y-auto border-b-4 border-primary bg-background p-0 dark:bg-slate-950 [&>button]:right-24 [&>button]:top-5 [&>button]:border [&>button]:border-brand [&>button]:bg-card [&>button]:p-1.5 [&>button]:text-foreground [&>button]:opacity-100">
         {event && (
           <div className="mx-auto w-full max-w-5xl px-5 py-7 sm:px-8">
             <SheetHeader className="sr-only">
@@ -252,7 +252,7 @@ function MeetingPanel({
               <SheetDescription>Meeting details and attendance responses</SheetDescription>
             </SheetHeader>
             <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-              <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-2xl border border-primary/20 bg-primary/8 shadow-sm">
+              <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-2xl border border-primary/20 bg-primary/8 shadow-sm dark:border-primary/50 dark:bg-white/[0.06]">
                 {club?.logo ? (
                   <img src={club.logo} alt={`${club.name} logo`} className="size-full object-contain p-2" />
                 ) : (
@@ -262,7 +262,7 @@ function MeetingPanel({
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{club?.name ?? teamName ?? "School event"}</p>
                 <h2 className="mt-1 font-display text-4xl leading-tight sm:text-5xl">{event.title}</h2>
-                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground dark:text-slate-300">
                   <span className="flex items-center gap-1.5"><CalendarClock className="size-4 text-primary" />{new Date(`${event.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</span>
                   <span className="flex items-center gap-1.5"><Clock3 className="size-4 text-primary" />{formatTime(event.start)}–{formatTime(event.end)}</span>
                   <span className="flex items-center gap-1.5"><MapPin className="size-4 text-primary" />{event.location}</span>
@@ -271,16 +271,16 @@ function MeetingPanel({
             </div>
 
             {event.description && (
-              <section className="mt-6 rounded-xl border border-border bg-card p-5 shadow-sm">
+              <section className="mt-6 rounded-xl border border-border bg-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <h3 className="text-xl font-semibold">Description</h3>
-                <p className="mt-2 max-w-4xl text-sm leading-relaxed text-muted-foreground">
+                <p className="mt-2 max-w-4xl text-sm leading-relaxed text-muted-foreground dark:text-slate-300">
                   {event.description}
                 </p>
               </section>
             )}
 
             <div className="mt-7 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-              <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+              <section className="rounded-xl border border-border bg-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div className="flex items-center gap-2"><Users className="size-5 text-primary" /><h3 className="text-xl font-semibold">Can you make it?</h3></div>
                 {canRespond ? (
                   <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -294,42 +294,42 @@ function MeetingPanel({
                           setError((await onRespond(status)) ?? "");
                           setBusy(null);
                         }}
-                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-3 text-sm font-semibold transition hover:-translate-y-0.5 disabled:opacity-60 ${current === status ? active : "border-input bg-background hover:border-primary/50"}`}
+                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-3 text-sm font-semibold transition hover:-translate-y-0.5 disabled:opacity-60 ${current === status ? active : "border-input bg-background hover:border-primary/50 dark:border-slate-600 dark:bg-slate-950 dark:hover:border-primary"}`}
                       >
                         <Icon className="size-4" /> {busy === status ? "Saving…" : label}
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-3 text-sm text-muted-foreground">Attendance responses are available to student accounts.</p>
+                  <p className="mt-3 text-sm text-muted-foreground dark:text-slate-300">Attendance responses are available to student accounts.</p>
                 )}
                 {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
                   {groups.map(({ status, label, icon: Icon }) => {
                     const people = responses.filter((response) => response.status === status);
                     return (
-                      <div key={status} className="rounded-lg bg-secondary/60 p-3">
+                      <div key={status} className="rounded-lg border border-transparent bg-secondary/60 p-3 dark:border-slate-700 dark:bg-slate-800">
                         <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide"><Icon className="size-3.5 text-primary" />{label} · {people.length}</p>
-                        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{people.length ? people.map((person) => person.name).join(", ") : "No responses yet"}</p>
+                        <p className="mt-2 text-xs leading-relaxed text-muted-foreground dark:text-slate-300">{people.length ? people.map((person) => person.name).join(", ") : "No responses yet"}</p>
                       </div>
                     );
                   })}
                 </div>
               </section>
 
-              <section className={`rounded-xl border p-5 shadow-sm ${conflicts.length ? "border-destructive/40 bg-destructive/5" : "border-border bg-card"}`}>
+              <section className={`rounded-xl border p-5 shadow-sm ${conflicts.length ? "border-destructive/40 bg-destructive/5 dark:border-destructive/60 dark:bg-destructive/10" : "border-border bg-card dark:border-slate-700 dark:bg-slate-900"}`}>
                 <div className="flex items-center gap-2"><CalendarClock className={`size-5 ${conflicts.length ? "text-destructive" : "text-success"}`} /><h3 className="text-xl font-semibold">Schedule conflicts</h3></div>
                 {conflicts.length ? (
                   <ul className="mt-3 space-y-2">
                     {conflicts.map((conflict) => (
                       <li key={conflict.id} className="rounded-lg border border-destructive/20 bg-card p-3">
                         <p className="text-sm font-semibold">{conflict.title}</p>
-                        <p className="text-xs text-muted-foreground">{formatTime(conflict.start)}–{formatTime(conflict.end)} · {conflict.location}</p>
+                        <p className="text-xs text-muted-foreground dark:text-slate-300">{formatTime(conflict.start)}–{formatTime(conflict.end)} · {conflict.location}</p>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-3 text-sm text-muted-foreground">No other joined meetings overlap with this time.</p>
+                  <p className="mt-3 text-sm text-muted-foreground dark:text-slate-300">No other joined meetings overlap with this time.</p>
                 )}
               </section>
             </div>
