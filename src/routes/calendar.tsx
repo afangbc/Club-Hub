@@ -136,7 +136,7 @@ function CalendarPage() {
                       {e.description && (
                         <div
                           role="tooltip"
-                          className="pointer-events-none absolute left-0 top-full z-50 mt-2 w-64 origin-top-left -translate-y-1 scale-[0.985] rounded-md border-2 border-primary bg-popover p-4 text-sm leading-relaxed text-popover-foreground opacity-0 shadow-xl ring-2 ring-primary/15 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:scale-100 group-focus-visible:opacity-100 motion-reduce:transform-none motion-reduce:transition-none"
+                          className="pointer-events-none absolute left-0 top-full z-50 mt-2 w-64 translate-y-1 transform-gpu rounded-md border-2 border-primary bg-popover p-4 text-sm leading-relaxed text-popover-foreground opacity-0 shadow-lg ring-1 ring-primary/15 transition-[opacity,transform] duration-200 ease-in-out will-change-[opacity,transform] group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 motion-reduce:transform-none motion-reduce:transition-none"
                         >
                           {e.description}
                         </div>
