@@ -34,6 +34,7 @@ import {
   throttled,
 } from "./auth";
 import { hashPassword, hashToken, newId, verifyPassword } from "./crypto";
+import { deleteClubLogo, isManagedLogoUrl, uploadClubLogo } from "./blob";
 import { emailInConsoleMode, sendVerificationCode } from "./email";
 import { isBootstrapAdmin, isOwner, ownersConfigured } from "./owners";
 import { FRISCO_SCHOOL_ID } from "./schema";
@@ -1090,7 +1091,11 @@ function validateClubInput(input: ClubInput): string | null {
   if (!CATEGORIES.includes(input.category)) return "Pick a category.";
   if (input.visibility !== "public" && input.visibility !== "private") return "Pick who can join.";
   if (!input.room.trim()) return "Add a room so students know where to show up.";
-  if (input.logo && !/^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(input.logo))
+  if (
+    input.logo &&
+    !/^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(input.logo) &&
+    !isManagedLogoUrl(input.logo)
+  )
     return "Upload a PNG, JPEG, WebP, or GIF logo.";
   if (input.logo.length > 450_000) return "The club logo must be smaller than 330 KB.";
   return null;
@@ -1104,7 +1109,20 @@ export async function createClub(input: ClubInput): Promise<Result> {
   const problem = validateClubInput(input);
   if (problem) return fail(problem);
 
-  return transaction((db) => {
+  let logo = input.logo;
+  let uploadedLogo: string | undefined;
+  try {
+    if (logo.startsWith("data:")) {
+      logo = await uploadClubLogo({ dataUrl: logo, schoolId: user.schoolId! });
+      uploadedLogo = logo;
+    }
+  } catch (uploadError) {
+    return fail(
+      uploadError instanceof Error ? uploadError.message : "The logo could not be uploaded.",
+    );
+  }
+
+  const result = await transaction((db) => {
     if (db.clubs.some((c) => c.schoolId === user.schoolId && norm(c.name) === norm(input.name)))
       return fail("A club with that name already exists on campus.");
 
@@ -1127,12 +1145,14 @@ export async function createClub(input: ClubInput): Promise<Result> {
       room: input.room.trim(),
       schedule: normalizeSchedule(input.schedule),
       blurb: input.blurb.trim(),
-      ...(input.logo ? { logo: input.logo } : {}),
+      ...(logo ? { logo } : {}),
       ...(input.joinInstructions.trim() ? { joinInstructions: input.joinInstructions.trim() } : {}),
       createdAt: new Date().toISOString(),
     });
     return ok;
   });
+  if (result.error) await deleteClubLogo(uploadedLogo);
+  return result;
 }
 
 export async function updateClub(input: {
@@ -1142,10 +1162,29 @@ export async function updateClub(input: {
   const { user, error } = await requireEnrolled();
   if (!user) return fail(error);
 
-  return transaction((db) => {
+  const currentClub = (await getDatabase()).clubs.find((club) => club.id === input.id);
+  if (!currentClub) return fail("That club no longer exists.");
+  if (!canManage(user, currentClub)) return fail("You don't sponsor that club.");
+
+  let uploadedLogo: string | undefined;
+  if (input.patch.logo?.startsWith("data:")) {
+    try {
+      uploadedLogo = await uploadClubLogo({ dataUrl: input.patch.logo, schoolId: user.schoolId! });
+      input = { ...input, patch: { ...input.patch, logo: uploadedLogo } };
+    } catch (uploadError) {
+      return fail(
+        uploadError instanceof Error ? uploadError.message : "The logo could not be uploaded.",
+      );
+    }
+  }
+
+  let previousLogo: string | undefined;
+
+  const result = await transaction((db) => {
     const club = db.clubs.find((c) => c.id === input.id);
     if (!club) return fail("That club no longer exists.");
     if (!canManage(user, club)) return fail("You don't sponsor that club.");
+    previousLogo = club.logo;
 
     const { patch } = input;
 
@@ -1180,7 +1219,8 @@ export async function updateClub(input: {
     if (patch.logo !== undefined) {
       if (
         patch.logo &&
-        !/^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(patch.logo)
+        !/^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(patch.logo) &&
+        !isManagedLogoUrl(patch.logo)
       )
         return fail("Upload a PNG, JPEG, WebP, or GIF logo.");
       if (patch.logo.length > 450_000) return fail("The club logo must be smaller than 330 KB.");
@@ -1201,16 +1241,23 @@ export async function updateClub(input: {
     }
     return ok;
   });
+  if (result.error) await deleteClubLogo(uploadedLogo);
+  else if (input.patch.logo !== undefined && previousLogo !== input.patch.logo)
+    await deleteClubLogo(previousLogo);
+  return result;
 }
 
 export async function deleteClub(input: { id: string }): Promise<Result> {
   const { user, error } = await requireEnrolled();
   if (!user) return fail(error);
 
-  return transaction((db) => {
+  let logoToDelete: string | undefined;
+
+  const result = await transaction((db) => {
     const club = db.clubs.find((c) => c.id === input.id);
     if (!club) return ok;
     if (!canManage(user, club)) return fail("You don't sponsor that club.");
+    logoToDelete = club.logo;
 
     const eventIds = new Set(
       db.events.filter((event) => event.clubId === club.id).map((event) => event.id),
@@ -1222,6 +1269,8 @@ export async function deleteClub(input: { id: string }): Promise<Result> {
     db.announcements = db.announcements.filter((a) => a.clubId !== club.id);
     return ok;
   });
+  if (!result.error) await deleteClubLogo(logoToDelete);
+  return result;
 }
 
 // -------------------------------------------------------- meetings & bulletins
