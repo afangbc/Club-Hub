@@ -173,7 +173,7 @@ export function ClubCard({ club }: { club: Club }) {
 
       {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
 
-      <div className="mt-4 flex gap-2 pt-1">
+      <div className="mt-auto flex gap-2 pt-4">
         {isMember ? (
           <>
             <span className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-success/12 py-2 text-sm font-semibold text-success">
