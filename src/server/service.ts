@@ -1,5 +1,6 @@
 import {
   CATEGORIES,
+  GRADES,
   defaultPrefs,
   emailProblem,
   formatSchedule,
@@ -847,13 +848,19 @@ export async function revokeAdmin(input: { userId: string }): Promise<Result> {
 
 // -------------------------------------------------------------------- account
 
-export async function updateProfile(input: { name: string; email: string }): Promise<Result> {
+export async function updateProfile(input: {
+  name: string;
+  email: string;
+  grade: string;
+}): Promise<Result> {
   const user = await currentUser();
   if (!user) return fail("You're signed out. Sign in and try again.");
 
   const name = input.name.trim();
   const email = input.email.trim();
   if (!name) return fail("Name can't be empty.");
+  if (user.role === "student" && !GRADES.includes(input.grade as (typeof GRADES)[number]))
+    return fail("Choose a valid grade.");
 
   if (!isOwner(email) && !isBootstrapAdmin(email)) {
     const emailError = emailProblem(email, user.role);
@@ -869,6 +876,7 @@ export async function updateProfile(input: { name: string; email: string }): Pro
     if (!record) return fail("Account not found.");
     record.name = name;
     record.email = email;
+    if (record.role === "student") record.grade = input.grade;
     // A new address is unproven, whatever the old one was.
     if (changedEmail) {
       record.emailVerified = false;

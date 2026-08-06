@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { roleLabel, type Prefs } from "@/lib/campus-data";
+import { GRADES, roleLabel, type Prefs } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/account")({
@@ -64,6 +64,7 @@ function AccountPage() {
   const navigate = useNavigate();
   const [name, setName] = useState(session?.name ?? "");
   const [email, setEmail] = useState(session?.email ?? "");
+  const [grade, setGrade] = useState(session?.grade ?? GRADES[0]);
   const [profileMsg, setProfileMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -86,19 +87,37 @@ function AccountPage() {
           className="space-y-4"
           onSubmit={async (e) => {
             e.preventDefault();
-            const err = await updateProfile({ name, email });
+            const err = await updateProfile({ name, email, grade });
             setProfileMsg(err ? { ok: false, text: err } : { ok: true, text: "Profile saved." });
           }}
         >
           <Field label="Full name" value={name} onChange={setName} />
           <Field label="School email" value={email} onChange={setEmail} type="email" />
+          {session.role === "student" && (
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Grade
+              </span>
+              <select
+                value={grade}
+                onChange={(event) => setGrade(event.target.value)}
+                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
+              >
+                {GRADES.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className="grid gap-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Role
             </span>
             <p className="text-sm">
               {roleLabel[session.role]}
-              {session.grade ? ` · ${session.grade}` : ""} —{" "}
+              —{" "}
               <span className="text-muted-foreground">
                 a school admin changes roles for the campus.
               </span>

@@ -96,7 +96,7 @@ type State = {
   verifyEmail: Action<[string]>;
   resendVerification: Action<[]>;
   joinSchool: Action<[string]>;
-  updateProfile: Action<[{ name: string; email: string }]>;
+  updateProfile: Action<[{ name: string; email: string; grade: string }]>;
   changePassword: Action<[string, string, string]>;
   setPref: Action<[keyof Prefs, boolean]>;
   deleteAccount: Action<[]>;

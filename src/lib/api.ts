@@ -176,9 +176,9 @@ export const revokeAdminFn = createServerFn({ method: "POST" })
   });
 
 export const updateProfileFn = createServerFn({ method: "POST" })
-  .validator((d: { name: string; email: string }) => {
+  .validator((d: { name: string; email: string; grade: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
-    return { name: str(raw.name, 120), email: str(raw.email, 200) };
+    return { name: str(raw.name, 120), email: str(raw.email, 200), grade: str(raw.grade, 12) };
   })
   .handler(async ({ data }): Promise<Result> => {
     const { updateProfile } = await import("@/server/service");
