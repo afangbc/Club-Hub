@@ -158,6 +158,7 @@ export type Club = {
   meets: string;
   members: number;
   blurb: string;
+  logo?: string;
   joinInstructions?: string | undefined;
 };
 
@@ -183,6 +184,15 @@ export type ClubEvent = {
   end: string;
   location: string;
   description?: string;
+};
+
+export type EventRsvpStatus = "going" | "maybe" | "not-going";
+
+export type EventRsvp = {
+  eventId: string;
+  userId: string;
+  name: string;
+  status: EventRsvpStatus;
 };
 
 export type Announcement = {

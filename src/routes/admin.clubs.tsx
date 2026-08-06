@@ -135,11 +135,14 @@ function ClubRow({
   return (
     <article className="card-surface p-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="min-w-52 flex-1">
+        <div className="flex min-w-52 flex-1 items-center gap-3">
+          {club.logo && <img src={club.logo} alt="" className="size-11 rounded-lg bg-card object-contain p-1 shadow-sm" />}
+          <div>
           <h2 className="text-2xl leading-tight">{club.name}</h2>
           <p className="text-xs text-muted-foreground">
             {club.sponsorName} · {club.meets} · {club.room} · {club.members} members
           </p>
+          </div>
         </div>
         <span
           className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${
@@ -178,6 +181,7 @@ function ClubRow({
               schedule: club.schedule,
               room: club.room,
               blurb: club.blurb,
+              logo: club.logo ?? "",
               joinInstructions: club.joinInstructions ?? "",
             }}
             onSubmit={(input) => updateClub(club.id, input)}

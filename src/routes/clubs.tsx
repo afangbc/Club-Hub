@@ -114,7 +114,12 @@ export function ClubCard({ club }: { club: Club }) {
   return (
     <article className="card-surface flex flex-col p-4">
       <div className="flex items-start justify-between gap-3">
-        <h2 className="text-2xl leading-tight">{club.name}</h2>
+        <div className="flex min-w-0 items-center gap-3">
+          {club.logo && (
+            <img src={club.logo} alt="" className="size-11 shrink-0 rounded-lg bg-card object-contain p-1 shadow-sm" />
+          )}
+          <h2 className="text-2xl leading-tight">{club.name}</h2>
+        </div>
         <span
           className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${
             club.visibility === "public"

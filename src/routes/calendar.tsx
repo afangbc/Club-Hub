@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarClock, Check, ChevronLeft, ChevronRight, Clock3, HelpCircle, MapPin, Users, X } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { formatTime } from "@/lib/campus-data";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { formatTime, type ClubEvent, type EventRsvpStatus } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/calendar")({
@@ -27,9 +28,10 @@ export const Route = createFileRoute("/calendar")({
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function CalendarPage() {
-  const { myClubs, clubs, teams, events: allEvents } = useSession();
+  const { session, myClubs, clubs, teams, events: allEvents, eventRsvps, setEventRsvp } = useSession();
   const today = new Date();
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const events = useMemo(
     () => allEvents.filter((event) => event.clubId ? myClubs.includes(event.clubId) : !!event.teamId && teams.some((team) => team.id === event.teamId)),
@@ -52,6 +54,7 @@ function CalendarPage() {
 
   const shift = (n: number) =>
     setCursor((c) => new Date(c.getFullYear(), c.getMonth() + n, 1));
+  const selected = events.find((event) => event.id === selectedId) ?? null;
 
   return (
     <div>
@@ -126,22 +129,16 @@ function CalendarPage() {
                 )}
                 <div className="mt-1 space-y-1">
                   {dayEvents.map((e) => (
-                    <div
+                    <button
+                      type="button"
                       key={e.id}
-                      tabIndex={e.description ? 0 : undefined}
-                      className="group relative rounded bg-accent px-1.5 py-1 text-[11px] leading-tight text-accent-foreground"
+                      onClick={() => setSelectedId(e.id)}
+                      aria-label={`Open details for ${e.title}`}
+                      className="w-full rounded bg-accent px-1.5 py-1 text-left text-[11px] leading-tight text-accent-foreground transition hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
                       <p className="truncate font-semibold">{e.title}</p>
                       <p className="truncate opacity-75">{formatTime(e.start)}</p>
-                      {e.description && (
-                        <div
-                          role="tooltip"
-                          className="pointer-events-none absolute left-0 top-full z-50 mt-2 w-64 translate-y-1 transform-gpu rounded-md border-2 border-primary bg-popover p-4 text-sm leading-relaxed text-popover-foreground opacity-0 shadow-lg ring-1 ring-primary/15 transition-[opacity,transform] duration-200 ease-in-out will-change-[opacity,transform] group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 motion-reduce:transform-none motion-reduce:transition-none"
-                        >
-                          {e.description}
-                        </div>
-                      )}
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -157,9 +154,11 @@ function CalendarPage() {
             {[...events]
               .sort((a, b) => a.date.localeCompare(b.date))
               .map((e) => (
-                <div
+                <button
+                  type="button"
                   key={e.id}
-                  className="card-surface flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm"
+                  onClick={() => setSelectedId(e.id)}
+                  className="card-surface flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm transition hover:-translate-y-0.5 hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <span className="w-20 shrink-0 text-xs font-semibold uppercase text-muted-foreground">
                     {new Date(`${e.date}T12:00:00`).toLocaleDateString(undefined, {
@@ -174,11 +173,151 @@ function CalendarPage() {
                   <span className="ml-auto text-xs">
                     {formatTime(e.start)} – {formatTime(e.end)}
                   </span>
-                </div>
+                </button>
               ))}
           </div>
         </section>
       )}
+      <MeetingPanel
+        event={selected}
+        events={events}
+        club={selected?.clubId ? clubs.find((club) => club.id === selected.clubId) : undefined}
+        teamName={selected?.teamId ? teams.find((team) => team.id === selected.teamId)?.name : undefined}
+        responses={selected ? eventRsvps.filter((rsvp) => rsvp.eventId === selected.id) : []}
+        currentUserId={session?.id ?? ""}
+        canRespond={session?.role === "student"}
+        onRespond={(status) => selected ? setEventRsvp(selected.id, status) : Promise.resolve(null)}
+        onClose={() => setSelectedId(null)}
+      />
     </div>
+  );
+}
+
+function MeetingPanel({
+  event,
+  events,
+  club,
+  teamName,
+  responses,
+  currentUserId,
+  canRespond,
+  onRespond,
+  onClose,
+}: {
+  event: ClubEvent | null;
+  events: ClubEvent[];
+  club: ReturnType<typeof useSession>["clubs"][number] | undefined;
+  teamName: string | undefined;
+  responses: ReturnType<typeof useSession>["eventRsvps"];
+  currentUserId: string;
+  canRespond: boolean;
+  onRespond: (status: EventRsvpStatus) => Promise<string | null>;
+  onClose: () => void;
+}) {
+  const [busy, setBusy] = useState<EventRsvpStatus | null>(null);
+  const [error, setError] = useState("");
+  const conflicts = event
+    ? events.filter(
+        (candidate) =>
+          candidate.id !== event.id &&
+          candidate.date === event.date &&
+          candidate.start < event.end &&
+          candidate.end > event.start,
+      )
+    : [];
+  const current = responses.find((response) => response.userId === currentUserId)?.status;
+  const groups: { status: EventRsvpStatus; label: string; icon: typeof Check; active: string }[] = [
+    { status: "going", label: "Going", icon: Check, active: "border-success bg-success/10 text-success" },
+    { status: "maybe", label: "Maybe", icon: HelpCircle, active: "border-brand bg-brand/10 text-foreground" },
+    { status: "not-going", label: "Can't go", icon: X, active: "border-destructive bg-destructive/10 text-destructive" },
+  ];
+
+  return (
+    <Sheet open={!!event} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="top" className="max-h-[92vh] overflow-y-auto border-b-4 border-primary bg-background p-0">
+        {event && (
+          <div className="mx-auto w-full max-w-5xl px-5 py-7 sm:px-8">
+            <SheetHeader className="sr-only">
+              <SheetTitle>{event.title}</SheetTitle>
+              <SheetDescription>Meeting details and attendance responses</SheetDescription>
+            </SheetHeader>
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+              <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-2xl border border-primary/20 bg-primary/8 shadow-sm">
+                {club?.logo ? (
+                  <img src={club.logo} alt={`${club.name} logo`} className="size-full object-contain p-2" />
+                ) : (
+                  <span className="font-display text-4xl text-primary">{(club?.name ?? teamName ?? "E").charAt(0)}</span>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{club?.name ?? teamName ?? "School event"}</p>
+                <h2 className="mt-1 font-display text-4xl leading-tight sm:text-5xl">{event.title}</h2>
+                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><CalendarClock className="size-4 text-primary" />{new Date(`${event.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</span>
+                  <span className="flex items-center gap-1.5"><Clock3 className="size-4 text-primary" />{formatTime(event.start)}–{formatTime(event.end)}</span>
+                  <span className="flex items-center gap-1.5"><MapPin className="size-4 text-primary" />{event.location}</span>
+                </div>
+                {event.description && <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">{event.description}</p>}
+              </div>
+            </div>
+
+            <div className="mt-7 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
+              <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                <div className="flex items-center gap-2"><Users className="size-5 text-primary" /><h3 className="text-xl font-semibold">Can you make it?</h3></div>
+                {canRespond ? (
+                  <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                    {groups.map(({ status, label, icon: Icon, active }) => (
+                      <button
+                        key={status}
+                        type="button"
+                        disabled={!!busy}
+                        onClick={async () => {
+                          setBusy(status);
+                          setError((await onRespond(status)) ?? "");
+                          setBusy(null);
+                        }}
+                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-3 text-sm font-semibold transition hover:-translate-y-0.5 disabled:opacity-60 ${current === status ? active : "border-input bg-background hover:border-primary/50"}`}
+                      >
+                        <Icon className="size-4" /> {busy === status ? "Saving…" : label}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-muted-foreground">Attendance responses are available to student accounts.</p>
+                )}
+                {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  {groups.map(({ status, label, icon: Icon }) => {
+                    const people = responses.filter((response) => response.status === status);
+                    return (
+                      <div key={status} className="rounded-lg bg-secondary/60 p-3">
+                        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide"><Icon className="size-3.5 text-primary" />{label} · {people.length}</p>
+                        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{people.length ? people.map((person) => person.name).join(", ") : "No responses yet"}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className={`rounded-xl border p-5 shadow-sm ${conflicts.length ? "border-destructive/40 bg-destructive/5" : "border-border bg-card"}`}>
+                <div className="flex items-center gap-2"><CalendarClock className={`size-5 ${conflicts.length ? "text-destructive" : "text-success"}`} /><h3 className="text-xl font-semibold">Schedule conflicts</h3></div>
+                {conflicts.length ? (
+                  <ul className="mt-3 space-y-2">
+                    {conflicts.map((conflict) => (
+                      <li key={conflict.id} className="rounded-lg border border-destructive/20 bg-card p-3">
+                        <p className="text-sm font-semibold">{conflict.title}</p>
+                        <p className="text-xs text-muted-foreground">{formatTime(conflict.start)}–{formatTime(conflict.end)} · {conflict.location}</p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm text-muted-foreground">No other joined meetings overlap with this time.</p>
+                )}
+              </section>
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }

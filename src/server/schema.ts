@@ -11,7 +11,7 @@ import {
 } from "@/lib/campus-data";
 import { hashPassword } from "./crypto";
 
-export const DB_VERSION = 10;
+export const DB_VERSION = 11;
 
 export type SchoolRecord = {
   id: string;
@@ -52,6 +52,7 @@ export type ClubRecord = {
   /** Structured, so the app renders the phrasing instead of a sponsor typing it. */
   schedule: MeetingSchedule;
   blurb: string;
+  logo?: string;
   joinInstructions?: string;
   createdAt: string;
 };
@@ -93,6 +94,13 @@ export type EventRecord = {
   end: string;
   location: string;
   description?: string;
+};
+
+export type EventRsvpRecord = {
+  eventId: string;
+  userId: string;
+  status: "going" | "maybe" | "not-going";
+  updatedAt: string;
 };
 
 export type AnnouncementRecord = {
@@ -154,6 +162,7 @@ export type Database = {
   teams: TeamRecord[];
   teamMemberships: TeamMembershipRecord[];
   events: EventRecord[];
+  eventRsvps: EventRsvpRecord[];
   announcements: AnnouncementRecord[];
   sessions: SessionRecord[];
   adminRequests: AdminRequestRecord[];
@@ -228,6 +237,7 @@ export async function buildSeedDatabase(): Promise<Database> {
       { id: "e-3", clubId: "c-key", title: "Park Cleanup Sign-Up", date: day(5), start: "16:00", end: "16:45", location: "B-220" },
       { id: "e-4", clubId: "c-nhs", title: "Induction Rehearsal", date: day(8), start: "07:30", end: "08:15", location: "Auditorium" },
     ],
+    eventRsvps: [],
     announcements: [
       { id: "a-1", clubId: "c-tsa", title: "Region forms due Friday", body: "Choose your events and return the signed entry form by Friday.", authorId: "u-alvarez", postedAt: day(-1) },
       { id: "a-2", clubId: "c-key", title: "Cleanup needs volunteers", body: "Saturday morning at Frisco Commons. The event counts for three service hours.", authorId: "u-whitfield", postedAt: day(-2) },

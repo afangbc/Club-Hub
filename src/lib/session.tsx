@@ -25,6 +25,7 @@ import {
   revokeAdminFn,
   setSchoolCodeFn,
   setSchoolColorsFn,
+  setEventRsvpFn,
   signInFn,
   signOutFn,
   signUpFn,
@@ -41,6 +42,8 @@ import {
   type Announcement,
   type Club,
   type ClubEvent,
+  type EventRsvp,
+  type EventRsvpStatus,
   type JoinRequest,
   type Prefs,
   type Role,
@@ -74,6 +77,7 @@ type State = {
   clubs: Club[];
   teams: Team[];
   events: ClubEvent[];
+  eventRsvps: EventRsvp[];
   announcements: Announcement[];
   myClubs: string[];
   pending: string[];
@@ -110,6 +114,7 @@ type State = {
   deleteClub: Action<[string]>;
   addEvent: Action<[Omit<ClubEvent, "id">]>;
   removeEvent: Action<[string]>;
+  setEventRsvp: Action<[string, EventRsvpStatus]>;
   addAnnouncement: Action<[{ clubId?: string; teamId?: string; title: string; body: string }]>;
   removeAnnouncement: Action<[string]>;
   resolveRequest: Action<[string, boolean]>;
@@ -137,6 +142,7 @@ const emptyState: AppState = {
   clubs: [],
   teams: [],
   events: [],
+  eventRsvps: [],
   announcements: [],
   myClubs: [],
   pending: [],
@@ -232,6 +238,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       clubs: state.clubs,
       teams: state.teams,
       events: state.events,
+      eventRsvps: state.eventRsvps,
       announcements: state.announcements,
       myClubs: state.myClubs,
       pending: state.pending,
@@ -273,6 +280,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       addEvent: (event) => run(() => createEventFn({ data: event })),
       removeEvent: (id) => run(() => deleteEventFn({ data: { id } })),
+      setEventRsvp: (eventId, status) =>
+        run(() => setEventRsvpFn({ data: { eventId, status } })),
       addAnnouncement: (post) => run(() => createAnnouncementFn({ data: post })),
       removeAnnouncement: (id) => run(() => deleteAnnouncementFn({ data: { id } })),
 

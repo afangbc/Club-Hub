@@ -11,6 +11,8 @@ import {
   type Club,
   type ClubCategory,
   type ClubEvent,
+  type EventRsvp,
+  type EventRsvpStatus,
   type JoinRequest,
   type MeetingSchedule,
   type Prefs,
@@ -62,6 +64,7 @@ export type AppState = {
   clubs: Club[];
   teams: Team[];
   events: ClubEvent[];
+  eventRsvps: EventRsvp[];
   announcements: Announcement[];
   myClubs: string[];
   pending: string[];
@@ -116,6 +119,7 @@ function toClub(db: Database, club: ClubRecord): Club {
     meets: formatSchedule(club.schedule),
     members: db.memberships.filter((m) => m.clubId === club.id && m.status === "member").length,
     blurb: club.blurb,
+    ...(club.logo ? { logo: club.logo } : {}),
     ...(club.joinInstructions === undefined ? {} : { joinInstructions: club.joinInstructions }),
   };
 }
@@ -223,6 +227,7 @@ export async function loadState(): Promise<AppState> {
     clubs: [],
     teams: [],
     events: [],
+    eventRsvps: [],
     announcements: [],
     myClubs: [],
     pending: [],
@@ -360,6 +365,13 @@ export async function loadState(): Promise<AppState> {
         }))
     : [];
 
+  const visibleEvents = db.events.filter((event) =>
+    event.teamId
+      ? visibleTeamIds.has(event.teamId)
+      : clubs.some((club) => club.id === event.clubId),
+  );
+  const visibleEventIds = new Set(visibleEvents.map((event) => event.id));
+
   return {
     ...empty,
     user: toSession(user),
@@ -373,11 +385,15 @@ export async function loadState(): Promise<AppState> {
     },
     clubs: clubs.map((c) => toClub(db, c)),
     teams: visibleTeams.map((team) => toTeam(db, team, user)),
-    events: db.events.filter((event) =>
-      event.teamId
-        ? visibleTeamIds.has(event.teamId)
-        : clubs.some((club) => club.id === event.clubId),
-    ),
+    events: visibleEvents,
+    eventRsvps: db.eventRsvps
+      .filter((rsvp) => visibleEventIds.has(rsvp.eventId))
+      .map((rsvp) => ({
+        eventId: rsvp.eventId,
+        userId: rsvp.userId,
+        name: db.users.find((account) => account.id === rsvp.userId)?.name ?? "Former student",
+        status: rsvp.status,
+      })),
     announcements: visibleAnnouncements
       .map((a) => ({
         id: a.id,
@@ -956,6 +972,7 @@ export async function deleteAccount(): Promise<Result> {
     db.users = db.users.filter((u) => u.id !== user.id);
     db.memberships = db.memberships.filter((m) => m.userId !== user.id);
     db.teamMemberships = db.teamMemberships.filter((membership) => membership.userId !== user.id);
+    db.eventRsvps = db.eventRsvps.filter((rsvp) => rsvp.userId !== user.id);
     db.sessions = db.sessions.filter((s) => s.userId !== user.id);
     db.emailVerifications = db.emailVerifications.filter((item) => item.userId !== user.id);
     db.adminRequests = db.adminRequests.filter((request) => request.userId !== user.id);
@@ -1055,6 +1072,7 @@ export type ClubInput = {
   room: string;
   schedule: MeetingSchedule;
   blurb: string;
+  logo: string;
   joinInstructions: string;
   /** Admins may hand a new club straight to a sponsor; teachers always get themselves. */
   sponsorId?: string;
@@ -1066,6 +1084,9 @@ function validateClubInput(input: ClubInput): string | null {
   if (!CATEGORIES.includes(input.category)) return "Pick a category.";
   if (input.visibility !== "public" && input.visibility !== "private") return "Pick who can join.";
   if (!input.room.trim()) return "Add a room so students know where to show up.";
+  if (input.logo && !/^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(input.logo))
+    return "Upload a PNG, JPEG, WebP, or GIF logo.";
+  if (input.logo.length > 450_000) return "The club logo must be smaller than 330 KB.";
   return null;
 }
 
@@ -1100,6 +1121,7 @@ export async function createClub(input: ClubInput): Promise<Result> {
       room: input.room.trim(),
       schedule: normalizeSchedule(input.schedule),
       blurb: input.blurb.trim(),
+      ...(input.logo ? { logo: input.logo } : {}),
       ...(input.joinInstructions.trim() ? { joinInstructions: input.joinInstructions.trim() } : {}),
       createdAt: new Date().toISOString(),
     });
@@ -1149,6 +1171,13 @@ export async function updateClub(input: {
     }
     if (patch.schedule !== undefined) club.schedule = normalizeSchedule(patch.schedule);
     if (patch.blurb !== undefined) club.blurb = patch.blurb.trim();
+    if (patch.logo !== undefined) {
+      if (patch.logo && !/^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(patch.logo))
+        return fail("Upload a PNG, JPEG, WebP, or GIF logo.");
+      if (patch.logo.length > 450_000) return fail("The club logo must be smaller than 330 KB.");
+      if (patch.logo) club.logo = patch.logo;
+      else delete club.logo;
+    }
     if (patch.joinInstructions !== undefined) {
       const text = patch.joinInstructions.trim();
       if (text) club.joinInstructions = text;
@@ -1174,9 +1203,11 @@ export async function deleteClub(input: { id: string }): Promise<Result> {
     if (!club) return ok;
     if (!canManage(user, club)) return fail("You don't sponsor that club.");
 
+    const eventIds = new Set(db.events.filter((event) => event.clubId === club.id).map((event) => event.id));
     db.clubs = db.clubs.filter((c) => c.id !== club.id);
     db.memberships = db.memberships.filter((m) => m.clubId !== club.id);
     db.events = db.events.filter((e) => e.clubId !== club.id);
+    db.eventRsvps = db.eventRsvps.filter((rsvp) => !eventIds.has(rsvp.eventId));
     db.announcements = db.announcements.filter((a) => a.clubId !== club.id);
     return ok;
   });
@@ -1250,6 +1281,52 @@ export async function deleteEvent(input: { id: string }): Promise<Result> {
     if (club ? !canManage(user, club) : team ? !canManageTeam(user, team) : true)
       return fail("You don't manage that club or team.");
     db.events = db.events.filter((e) => e.id !== event.id);
+    db.eventRsvps = db.eventRsvps.filter((rsvp) => rsvp.eventId !== event.id);
+    return ok;
+  });
+}
+
+export async function setEventRsvp(input: {
+  eventId: string;
+  status: EventRsvpStatus;
+}): Promise<Result> {
+  const { user, error } = await requireEnrolled();
+  if (!user) return fail(error);
+  if (user.role !== "student") return fail("Only students can respond to meetings and events.");
+  if (!(["going", "maybe", "not-going"] as EventRsvpStatus[]).includes(input.status))
+    return fail("Choose Going, Maybe, or Can't go.");
+
+  return transaction((db) => {
+    const event = db.events.find((candidate) => candidate.id === input.eventId);
+    if (!event) return fail("That meeting no longer exists.");
+    const canSee = event.clubId
+      ? db.memberships.some(
+          (membership) =>
+            membership.clubId === event.clubId &&
+            membership.userId === user.id &&
+            membership.status === "member",
+        )
+      : event.teamId
+        ? db.teamMemberships.some(
+            (membership) => membership.teamId === event.teamId && membership.userId === user.id,
+          )
+        : false;
+    if (!canSee) return fail("You can only respond to meetings for clubs and teams you joined.");
+
+    const existing = db.eventRsvps.find(
+      (rsvp) => rsvp.eventId === event.id && rsvp.userId === user.id,
+    );
+    if (existing) {
+      existing.status = input.status;
+      existing.updatedAt = new Date().toISOString();
+    } else {
+      db.eventRsvps.push({
+        eventId: event.id,
+        userId: user.id,
+        status: input.status,
+        updatedAt: new Date().toISOString(),
+      });
+    }
     return ok;
   });
 }

@@ -152,11 +152,14 @@ function ClubEditor({ club, rooms, pending }: { club: Club; rooms: string[]; pen
   return (
     <article className="card-surface p-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="flex min-w-0 items-center gap-3">
+          {club.logo && <img src={club.logo} alt="" className="size-11 rounded-lg bg-card object-contain p-1 shadow-sm" />}
+          <div>
           <h3 className="text-2xl leading-tight">{club.name}</h3>
           <p className="text-xs text-muted-foreground">
             {club.members} members · {pending} pending · {club.meets}
           </p>
+          </div>
         </div>
         <button
           onClick={async () =>
@@ -202,6 +205,7 @@ function ClubEditor({ club, rooms, pending }: { club: Club; rooms: string[]; pen
               schedule: club.schedule,
               room: club.room,
               blurb: club.blurb,
+              logo: club.logo ?? "",
               joinInstructions: club.joinInstructions ?? "",
             }}
             onSubmit={async (input) => {

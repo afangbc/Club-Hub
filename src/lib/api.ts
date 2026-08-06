@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import {
   normalizeSchedule,
   type ClubCategory,
+  type EventRsvpStatus,
   type MeetingSchedule,
   type Prefs,
   type Role,
@@ -259,6 +260,7 @@ function clubInput(raw: Partial<ClubInput>): Required<ClubInput> {
     // Bounds every field of the schedule before it reaches the service.
     schedule: normalizeSchedule(raw.schedule as Partial<MeetingSchedule> | undefined),
     blurb: str(raw.blurb, 600),
+    logo: str(raw.logo, 450_000),
     joinInstructions: str(raw.joinInstructions, 600),
     sponsorId: str(raw.sponsorId, 60),
   };
@@ -333,6 +335,19 @@ export const deleteEventFn = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<Result> => {
     const { deleteEvent } = await import("@/server/service");
     return deleteEvent(data);
+  });
+
+export const setEventRsvpFn = createServerFn({ method: "POST" })
+  .validator((d: { eventId: string; status: EventRsvpStatus }) => {
+    const raw = (d ?? {}) as Partial<typeof d>;
+    return {
+      eventId: str(raw.eventId, 60),
+      status: str(raw.status, 20) as EventRsvpStatus,
+    };
+  })
+  .handler(async ({ data }): Promise<Result> => {
+    const { setEventRsvp } = await import("@/server/service");
+    return setEventRsvp(data);
   });
 
 export const createAnnouncementFn = createServerFn({ method: "POST" })
