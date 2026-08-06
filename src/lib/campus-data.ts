@@ -298,6 +298,31 @@ export const roleLabel: Record<Role, string> = {
   admin: "School Admin",
 };
 
+/** Compact campus mark for the header: "Lone Star High School" becomes "LS". */
+export function schoolInitials(name: string | undefined): string {
+  if (!name?.trim()) return "C";
+  const genericWords = new Set([
+    "the",
+    "of",
+    "high",
+    "middle",
+    "elementary",
+    "school",
+    "academy",
+    "campus",
+  ]);
+  const meaningful = name
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.replace(/[^a-z0-9]/gi, ""))
+    .filter((word) => word && !genericWords.has(word.toLowerCase()));
+  const words = meaningful.length > 0 ? meaningful : [name.trim()];
+  return words
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 /** School-issued email is required, but ClubHub supports many districts. */
 export function emailProblem(email: string, role: Role): string | null {
   const value = email.trim().toLowerCase();

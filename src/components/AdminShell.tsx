@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Building2, KeyRound, LogOut, Settings, UserCog, Users } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
-import { homeFor, roleLabel } from "@/lib/campus-data";
+import { homeFor, roleLabel, schoolInitials } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 const nav = [
@@ -31,7 +31,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
           <Link to="/admin" className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-md bg-brand font-display text-lg text-brand-foreground">
-              F
+              {schoolInitials(school?.name)}
             </span>
             <span className="font-display text-2xl leading-none">
               ClubHub <span className="text-brand">Admin</span>
