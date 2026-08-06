@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { SelectField } from "@/components/form-fields";
 import { GRADES, roleLabel, type Prefs } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
@@ -48,6 +49,8 @@ const prefRows: { key: keyof Prefs; label: string; hint: string }[] = [
   },
 ];
 
+const gradeOptions = GRADES.map((grade) => ({ value: grade, label: grade }));
+
 function AccountPage() {
   const {
     session,
@@ -94,22 +97,7 @@ function AccountPage() {
           <Field label="Full name" value={name} onChange={setName} />
           <Field label="School email" value={email} onChange={setEmail} type="email" />
           {session.role === "student" && (
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Grade
-              </span>
-              <select
-                value={grade}
-                onChange={(event) => setGrade(event.target.value)}
-                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
-              >
-                {GRADES.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <SelectField label="Grade" value={grade} onChange={setGrade} options={gradeOptions} />
           )}
           <div className="grid gap-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
