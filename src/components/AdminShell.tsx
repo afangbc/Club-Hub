@@ -30,7 +30,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-border bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
           <Link to="/admin" className="flex items-center gap-2">
-            <span className="grid size-8 place-items-center rounded-md bg-brand font-display text-lg text-brand-foreground">
+            <span className="grid size-8 place-items-center rounded-md bg-brand text-center font-display text-xl leading-none text-brand-foreground">
               {schoolInitials(school?.name)}
             </span>
             <span className="font-display text-2xl leading-none">
