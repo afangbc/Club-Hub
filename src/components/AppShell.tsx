@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (!ready || !session || !session.emailVerified || !joined || locked) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-secondary">
       <header className="sticky top-0 z-30 border-b border-border bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
           <Link to="/clubs" className="flex items-center gap-2">
