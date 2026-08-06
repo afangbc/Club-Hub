@@ -197,6 +197,7 @@ export type EventRsvp = {
 
 export type Announcement = {
   id: string;
+  schoolWide?: boolean;
   clubId?: string;
   teamId?: string;
   title: string;

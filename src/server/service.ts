@@ -318,6 +318,7 @@ export async function loadState(): Promise<AppState> {
   const schoolClubIds = new Set(clubs.map((club) => club.id));
 
   const visibleAnnouncements = db.announcements.filter((a) => {
+    if (a.schoolId) return a.schoolId === school.id;
     if (a.teamId) return visibleTeamIds.has(a.teamId);
     if (!a.clubId || !schoolClubIds.has(a.clubId)) return false;
     if (user.role === "admin") return true;
@@ -397,6 +398,7 @@ export async function loadState(): Promise<AppState> {
     announcements: visibleAnnouncements
       .map((a) => ({
         id: a.id,
+        ...(a.schoolId ? { schoolWide: true } : {}),
         ...(a.clubId ? { clubId: a.clubId } : {}),
         ...(a.teamId ? { teamId: a.teamId } : {}),
         title: a.title,
@@ -1334,13 +1336,16 @@ export async function setEventRsvp(input: {
 export async function createAnnouncement(input: {
   clubId?: string;
   teamId?: string;
+  schoolWide?: boolean;
   title: string;
   body: string;
 }): Promise<Result> {
   const { user, error } = await requireEnrolled();
   if (!user) return fail(error);
   if (!input.title.trim() || !input.body.trim())
-    return fail("Pick a club or team, then add a headline and a message.");
+    return fail("Pick an audience, then add a headline and a message.");
+  if (input.schoolWide && !isActiveAdmin(user))
+    return fail("Only a school admin can send an announcement to the entire school.");
 
   return transaction((db) => {
     const club = input.clubId
@@ -1349,12 +1354,14 @@ export async function createAnnouncement(input: {
     const team = input.teamId
       ? db.teams.find((candidate) => candidate.id === input.teamId)
       : undefined;
-    if ((!club && !team) || (club && team)) return fail("Pick one club or team.");
+    const targetCount = Number(!!club) + Number(!!team) + Number(!!input.schoolWide);
+    if (targetCount !== 1) return fail("Pick exactly one audience.");
     if (club && !canManage(user, club)) return fail("You don't sponsor that club.");
     if (team && !canManageTeam(user, team)) return fail("You don't sponsor that team.");
 
     db.announcements.push({
       id: newId("ann"),
+      ...(input.schoolWide ? { schoolId: user.schoolId! } : {}),
       ...(club ? { clubId: club.id } : {}),
       ...(team ? { teamId: team.id } : {}),
       title: input.title.trim().slice(0, 120),
@@ -1379,8 +1386,16 @@ export async function deleteAnnouncement(input: { id: string }): Promise<Result>
     const team = post.teamId
       ? db.teams.find((candidate) => candidate.id === post.teamId)
       : undefined;
-    if (club ? !canManage(user, club) : team ? !canManageTeam(user, team) : true)
-      return fail("You don't manage that club or team.");
+    if (
+      post.schoolId
+        ? !isActiveAdmin(user) || post.schoolId !== user.schoolId
+        : club
+          ? !canManage(user, club)
+          : team
+            ? !canManageTeam(user, team)
+            : true
+    )
+      return fail("You don't manage that announcement's audience.");
     db.announcements = db.announcements.filter((a) => a.id !== post.id);
     return ok;
   });

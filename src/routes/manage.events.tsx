@@ -25,7 +25,7 @@ export const Route = createFileRoute("/manage/events")({
   component: Meetings,
 });
 
-function Meetings() {
+export function Meetings() {
   const { session, clubs, teams, events, addEvent, removeEvent } = useSession();
   const mine = session ? staffClubs(clubs, session) : [];
   const ids = mine.map((c) => c.id);

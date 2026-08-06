@@ -23,7 +23,9 @@ import { Route as RequestAdminRouteImport } from './routes/request-admin'
 import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminClubsRouteImport } from './routes/admin.clubs'
+import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminTeachersRouteImport } from './routes/admin.teachers'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as ManageIndexRouteImport } from './routes/manage.index'
@@ -102,9 +104,19 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminClubsRoute = AdminClubsRouteImport.update({
   id: '/clubs',
   path: '/clubs',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEventsRoute = AdminEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminTeachersRoute = AdminTeachersRouteImport.update({
@@ -157,7 +169,9 @@ export interface FileRoutesByFullPath {
   '/request-admin': typeof RequestAdminRoute
   '/teams': typeof TeamsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/clubs': typeof AdminClubsRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/teachers': typeof AdminTeachersRoute
   '/admin/users': typeof AdminUsersRoute
   '/manage/announcements': typeof ManageAnnouncementsRoute
@@ -179,7 +193,9 @@ export interface FileRoutesByTo {
   '/request-admin': typeof RequestAdminRoute
   '/teams': typeof TeamsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/clubs': typeof AdminClubsRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/teachers': typeof AdminTeachersRoute
   '/admin/users': typeof AdminUsersRoute
   '/manage/announcements': typeof ManageAnnouncementsRoute
@@ -204,7 +220,9 @@ export interface FileRoutesById {
   '/request-admin': typeof RequestAdminRoute
   '/teams': typeof TeamsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/clubs': typeof AdminClubsRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/teachers': typeof AdminTeachersRoute
   '/admin/users': typeof AdminUsersRoute
   '/manage/announcements': typeof ManageAnnouncementsRoute
@@ -230,7 +248,9 @@ export interface FileRouteTypes {
     | '/request-admin'
     | '/teams'
     | '/verify-email'
+    | '/admin/announcements'
     | '/admin/clubs'
+    | '/admin/events'
     | '/admin/teachers'
     | '/admin/users'
     | '/manage/announcements'
@@ -252,7 +272,9 @@ export interface FileRouteTypes {
     | '/request-admin'
     | '/teams'
     | '/verify-email'
+    | '/admin/announcements'
     | '/admin/clubs'
+    | '/admin/events'
     | '/admin/teachers'
     | '/admin/users'
     | '/manage/announcements'
@@ -276,7 +298,9 @@ export interface FileRouteTypes {
     | '/request-admin'
     | '/teams'
     | '/verify-email'
+    | '/admin/announcements'
     | '/admin/clubs'
+    | '/admin/events'
     | '/admin/teachers'
     | '/admin/users'
     | '/manage/announcements'
@@ -403,11 +427,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/announcements': {
+      id: '/admin/announcements'
+      path: '/announcements'
+      fullPath: '/admin/announcements'
+      preLoaderRoute: typeof AdminAnnouncementsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/clubs': {
       id: '/admin/clubs'
       path: '/clubs'
       fullPath: '/admin/clubs'
       preLoaderRoute: typeof AdminClubsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events': {
+      id: '/admin/events'
+      path: '/events'
+      fullPath: '/admin/events'
+      preLoaderRoute: typeof AdminEventsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/teachers': {
@@ -463,14 +501,18 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminClubsRoute: typeof AdminClubsRoute
+  AdminEventsRoute: typeof AdminEventsRoute
   AdminTeachersRoute: typeof AdminTeachersRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminClubsRoute: AdminClubsRoute,
+  AdminEventsRoute: AdminEventsRoute,
   AdminTeachersRoute: AdminTeachersRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,

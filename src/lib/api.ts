@@ -351,11 +351,12 @@ export const setEventRsvpFn = createServerFn({ method: "POST" })
   });
 
 export const createAnnouncementFn = createServerFn({ method: "POST" })
-  .validator((d: { clubId?: string; teamId?: string; title: string; body: string }) => {
+  .validator((d: { clubId?: string; teamId?: string; schoolWide?: boolean; title: string; body: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;
     return {
       clubId: str(raw.clubId, 60),
       teamId: str(raw.teamId, 60),
+      schoolWide: flag(raw.schoolWide),
       title: str(raw.title, 120),
       body: str(raw.body, 2000),
     };

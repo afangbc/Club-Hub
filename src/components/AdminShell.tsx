@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Building2, KeyRound, LogOut, Settings, UserCog, Users } from "lucide-react";
+import { Building2, CalendarPlus, KeyRound, LogOut, Megaphone, Settings, UserCog, Users } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { homeFor, roleLabel, schoolInitials } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
@@ -7,6 +7,8 @@ import { useSession } from "@/lib/session";
 const nav = [
   { to: "/admin", label: "Campus", icon: KeyRound },
   { to: "/admin/clubs", label: "Clubs", icon: Building2 },
+  { to: "/admin/events", label: "Meetings / Events", icon: CalendarPlus },
+  { to: "/admin/announcements", label: "Announcements", icon: Megaphone },
   { to: "/admin/teachers", label: "Staff Accounts", icon: UserCog },
   { to: "/admin/users", label: "All Users", icon: Users },
 ] as const;
@@ -70,7 +72,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             </button>
           </div>
         </div>
-        <nav className="flow-nav mx-auto flex max-w-6xl gap-1 px-2">
+        <nav className="flow-nav mx-auto flex max-w-6xl gap-1 overflow-x-auto px-2">
           {nav.map((n) => (
             <Link
               key={n.to}

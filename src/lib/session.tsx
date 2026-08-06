@@ -115,7 +115,7 @@ type State = {
   addEvent: Action<[Omit<ClubEvent, "id">]>;
   removeEvent: Action<[string]>;
   setEventRsvp: Action<[string, EventRsvpStatus]>;
-  addAnnouncement: Action<[{ clubId?: string; teamId?: string; title: string; body: string }]>;
+  addAnnouncement: Action<[{ clubId?: string; teamId?: string; schoolWide?: boolean; title: string; body: string }]>;
   removeAnnouncement: Action<[string]>;
   resolveRequest: Action<[string, boolean]>;
   reviewStaff: Action<[string, boolean]>;
