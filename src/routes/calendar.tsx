@@ -257,9 +257,17 @@ function MeetingPanel({
                   <span className="flex items-center gap-1.5"><Clock3 className="size-4 text-primary" />{formatTime(event.start)}–{formatTime(event.end)}</span>
                   <span className="flex items-center gap-1.5"><MapPin className="size-4 text-primary" />{event.location}</span>
                 </div>
-                {event.description && <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">{event.description}</p>}
               </div>
             </div>
+
+            {event.description && (
+              <section className="mt-6 rounded-xl border border-border bg-card p-5 shadow-sm">
+                <h3 className="text-xl font-semibold">Description</h3>
+                <p className="mt-2 max-w-4xl text-sm leading-relaxed text-muted-foreground">
+                  {event.description}
+                </p>
+              </section>
+            )}
 
             <div className="mt-7 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
               <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
