@@ -100,9 +100,6 @@ function Index() {
 
       <section className="flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Step {step} of 2
-          </p>
           {step === 1 ? (
             <form
               className="mt-3 space-y-5"
