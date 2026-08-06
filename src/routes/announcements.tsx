@@ -45,7 +45,7 @@ function AnnouncementsPage() {
       </p>
 
       {joined.length + teams.length > 1 && (
-        <div className="mt-6 flex flex-wrap gap-1.5">
+        <div className="control-flow-in mt-6 flex flex-wrap gap-1.5">
           <Chip active={filter === "all"} onClick={() => setFilter("all")}>
             All
           </Chip>

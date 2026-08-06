@@ -80,7 +80,7 @@ function AdminClubs() {
         </section>
       </SmoothCollapse>
 
-      <div className="relative mt-6 max-w-md">
+      <div className="control-flow-in relative mt-6 max-w-md">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
           value={q}
