@@ -80,7 +80,8 @@ function Index() {
           </h1>
           <p className="mt-5 text-base opacity-80">
             No more juggling a different app for every club just to find out where a meeting is.
-            Every club, team, announcement, and event at your school — one place, built for every campus.
+            Every club, team, announcement, and event at your school — one place, built for every
+            campus.
           </p>
           <ul className="mt-8 space-y-3 text-sm opacity-90">
             {[
@@ -168,7 +169,7 @@ function Index() {
                 />
               )}
               {mode === "signup" && role === "student" && (
-                <><label className="block">
+                <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Grade
                   </span>
@@ -184,12 +185,14 @@ function Index() {
                     ))}
                   </select>
                 </label>
+              )}
+              {mode === "signup" && role !== "admin" && (
                 <Field
                   label="School code"
                   value={code}
                   onChange={(value) => setCode(value.toUpperCase())}
                   placeholder="ABCD-1234"
-                /></>
+                />
               )}
               <Field
                 label="School email"
@@ -216,7 +219,8 @@ function Index() {
               )}
               {mode === "signup" && role === "teacher" && (
                 <p className="rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground">
-                  Teacher accounts stay locked until a school admin approves them.
+                  Your code sends your teacher account to that school's admin for approval. You
+                  cannot access sponsor tools until they approve it.
                 </p>
               )}
               {mode === "signup" && role === "admin" && (

@@ -502,11 +502,11 @@ export async function signUp(input: {
   if (passwordError) return fail(passwordError);
 
   const signupDb = await getDatabase();
-  const studentSchool =
-    input.role === "student" && !privileged
+  const selectedSchool =
+    (input.role === "student" || input.role === "teacher") && !privileged
       ? signupDb.schools.find((school) => norm(school.joinCode) === norm(input.schoolCode))
       : null;
-  if (input.role === "student" && !privileged && !studentSchool)
+  if ((input.role === "student" || input.role === "teacher") && !privileged && !selectedSchool)
     return fail("Enter the school code your school gave you.");
 
   const passwordHash = await hashPassword(input.password);
@@ -530,7 +530,7 @@ export async function signUp(input: {
       status: input.role === "student" || privileged ? "active" : "pending",
       passwordHash,
       emailVerified: false,
-      schoolId: bootstrap ? (defaultSchool?.id ?? null) : (studentSchool?.id ?? null),
+      schoolId: bootstrap ? (defaultSchool?.id ?? null) : (selectedSchool?.id ?? null),
       ...(input.role === "student" && input.grade ? { grade: input.grade } : {}),
       prefs: { ...defaultPrefs },
       createdAt: new Date().toISOString(),
@@ -640,9 +640,6 @@ export async function signIn(input: { email: string; password: string }): Promis
     return fail(BAD_CREDENTIALS);
   }
 
-  if (user.status === "denied")
-    return fail("A school admin declined this staff account. Contact the front office.");
-
   clearFailures(key);
   await startSession(user.id);
   return ok;
@@ -659,7 +656,9 @@ export async function joinSchool(input: { code: string }): Promise<Result> {
   if (!user.emailVerified) return fail("Confirm your email address first.");
   if (user.role === "admin")
     return fail("School admins receive a campus when a ClubHub owner approves their application.");
-  if (user.schoolId) return fail("Your account already belongs to a campus.");
+  const transferringAfterRevocation = user.role === "teacher" && user.status === "denied";
+  if (user.schoolId && !transferringAfterRevocation)
+    return fail("Your account already belongs to a campus.");
 
   const db = await getDatabase();
   const school = db.schools.find((candidate) => norm(candidate.joinCode) === norm(input.code));
@@ -668,7 +667,10 @@ export async function joinSchool(input: { code: string }): Promise<Result> {
 
   await transaction((next) => {
     const record = next.users.find((u) => u.id === user.id);
-    if (record) record.schoolId = school.id;
+    if (record) {
+      record.schoolId = school.id;
+      if (record.role === "teacher") record.status = "pending";
+    }
   });
   return ok;
 }
@@ -982,7 +984,9 @@ export async function deleteAccount(): Promise<Result> {
   });
 
   if (sponsored.includes(onlyAdminBlock))
-    return fail("Approve another school admin before deleting the campus's only administrator account.");
+    return fail(
+      "Approve another school admin before deleting the campus's only administrator account.",
+    );
   if (sponsored.length > 0)
     return fail(
       `Hand ${sponsored.join(", ")} to another sponsor before deleting your account — a school admin can reassign it.`,
@@ -1174,7 +1178,10 @@ export async function updateClub(input: {
     if (patch.schedule !== undefined) club.schedule = normalizeSchedule(patch.schedule);
     if (patch.blurb !== undefined) club.blurb = patch.blurb.trim();
     if (patch.logo !== undefined) {
-      if (patch.logo && !/^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(patch.logo))
+      if (
+        patch.logo &&
+        !/^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(patch.logo)
+      )
         return fail("Upload a PNG, JPEG, WebP, or GIF logo.");
       if (patch.logo.length > 450_000) return fail("The club logo must be smaller than 330 KB.");
       if (patch.logo) club.logo = patch.logo;
@@ -1205,7 +1212,9 @@ export async function deleteClub(input: { id: string }): Promise<Result> {
     if (!club) return ok;
     if (!canManage(user, club)) return fail("You don't sponsor that club.");
 
-    const eventIds = new Set(db.events.filter((event) => event.clubId === club.id).map((event) => event.id));
+    const eventIds = new Set(
+      db.events.filter((event) => event.clubId === club.id).map((event) => event.id),
+    );
     db.clubs = db.clubs.filter((c) => c.id !== club.id);
     db.memberships = db.memberships.filter((m) => m.clubId !== club.id);
     db.events = db.events.filter((e) => e.clubId !== club.id);
@@ -1259,9 +1268,7 @@ export async function createEvent(input: {
       start,
       end,
       location: input.location.trim(),
-      ...(input.description?.trim()
-        ? { description: input.description.trim().slice(0, 500) }
-        : {}),
+      ...(input.description?.trim() ? { description: input.description.trim().slice(0, 500) } : {}),
     });
     return ok;
   });
