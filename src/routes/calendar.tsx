@@ -32,6 +32,7 @@ function CalendarPage() {
   const today = new Date();
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const events = useMemo(
     () => allEvents.filter((event) => event.clubId ? myClubs.includes(event.clubId) : !!event.teamId && teams.some((team) => team.id === event.teamId)),
@@ -132,7 +133,10 @@ function CalendarPage() {
                     <button
                       type="button"
                       key={e.id}
-                      onClick={() => setSelectedId(e.id)}
+                      onClick={() => {
+                        setSelectedId(e.id);
+                        setPanelOpen(true);
+                      }}
                       aria-label={`Open details for ${e.title}`}
                       className="w-full rounded bg-accent px-1.5 py-1 text-left text-[11px] leading-tight text-accent-foreground transition hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
@@ -157,7 +161,10 @@ function CalendarPage() {
                 <button
                   type="button"
                   key={e.id}
-                  onClick={() => setSelectedId(e.id)}
+                  onClick={() => {
+                    setSelectedId(e.id);
+                    setPanelOpen(true);
+                  }}
                   className="card-surface flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm transition hover:-translate-y-0.5 hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <span className="w-20 shrink-0 text-xs font-semibold uppercase text-muted-foreground">
@@ -179,6 +186,7 @@ function CalendarPage() {
         </section>
       )}
       <MeetingPanel
+        open={panelOpen}
         event={selected}
         events={events}
         club={selected?.clubId ? clubs.find((club) => club.id === selected.clubId) : undefined}
@@ -187,13 +195,14 @@ function CalendarPage() {
         currentUserId={session?.id ?? ""}
         canRespond={session?.role === "student"}
         onRespond={(status) => selected ? setEventRsvp(selected.id, status) : Promise.resolve(null)}
-        onClose={() => setSelectedId(null)}
+        onOpenChange={setPanelOpen}
       />
     </div>
   );
 }
 
 function MeetingPanel({
+  open,
   event,
   events,
   club,
@@ -202,8 +211,9 @@ function MeetingPanel({
   currentUserId,
   canRespond,
   onRespond,
-  onClose,
+  onOpenChange,
 }: {
+  open: boolean;
   event: ClubEvent | null;
   events: ClubEvent[];
   club: ReturnType<typeof useSession>["clubs"][number] | undefined;
@@ -212,7 +222,7 @@ function MeetingPanel({
   currentUserId: string;
   canRespond: boolean;
   onRespond: (status: EventRsvpStatus) => Promise<string | null>;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
 }) {
   const [busy, setBusy] = useState<EventRsvpStatus | null>(null);
   const [error, setError] = useState("");
@@ -233,8 +243,8 @@ function MeetingPanel({
   ];
 
   return (
-    <Sheet open={!!event} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="top" className="max-h-[92vh] overflow-y-auto border-b-4 border-primary bg-background p-0">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="top" className="z-[110] max-h-[92vh] overflow-y-auto border-b-4 border-primary bg-background p-0 [&>button]:right-24 [&>button]:top-5">
         {event && (
           <div className="mx-auto w-full max-w-5xl px-5 py-7 sm:px-8">
             <SheetHeader className="sr-only">
