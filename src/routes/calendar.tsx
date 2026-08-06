@@ -244,7 +244,7 @@ function MeetingPanel({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="top" className="z-[110] max-h-[92vh] overflow-y-auto border-b-4 border-primary bg-background p-0 dark:bg-slate-950 [&>button]:right-24 [&>button]:top-5 [&>button]:border [&>button]:border-brand [&>button]:bg-card [&>button]:p-1.5 [&>button]:text-foreground [&>button]:opacity-100">
+      <SheetContent side="top" className="z-[110] max-h-[92vh] overflow-y-auto border-b-4 border-primary bg-background p-0 dark:border-sky-400 dark:bg-slate-950 [&>button]:right-24 [&>button]:top-5 [&>button]:border [&>button]:border-brand [&>button]:bg-card [&>button]:p-1.5 [&>button]:text-foreground [&>button]:opacity-100">
         {event && (
           <div className="mx-auto w-full max-w-5xl px-5 py-7 sm:px-8">
             <SheetHeader className="sr-only">
@@ -252,20 +252,20 @@ function MeetingPanel({
               <SheetDescription>Meeting details and attendance responses</SheetDescription>
             </SheetHeader>
             <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-              <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-2xl border border-primary/20 bg-primary/8 shadow-sm dark:border-primary/50 dark:bg-white/[0.06]">
+              <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-2xl border border-primary/20 bg-primary/8 shadow-sm dark:border-sky-400 dark:bg-sky-400/15 dark:shadow-[0_0_24px_rgba(56,189,248,0.16)] dark:ring-2 dark:ring-sky-400/25">
                 {club?.logo ? (
                   <img src={club.logo} alt={`${club.name} logo`} className="size-full object-contain p-2" />
                 ) : (
-                  <span className="font-display text-4xl text-primary">{(club?.name ?? teamName ?? "E").charAt(0)}</span>
+                  <span className="font-display text-4xl text-primary dark:text-sky-300">{(club?.name ?? teamName ?? "E").charAt(0)}</span>
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{club?.name ?? teamName ?? "School event"}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary dark:text-sky-400">{club?.name ?? teamName ?? "School event"}</p>
                 <h2 className="mt-1 font-display text-4xl leading-tight sm:text-5xl">{event.title}</h2>
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground dark:text-slate-300">
-                  <span className="flex items-center gap-1.5"><CalendarClock className="size-4 text-primary" />{new Date(`${event.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</span>
-                  <span className="flex items-center gap-1.5"><Clock3 className="size-4 text-primary" />{formatTime(event.start)}–{formatTime(event.end)}</span>
-                  <span className="flex items-center gap-1.5"><MapPin className="size-4 text-primary" />{event.location}</span>
+                  <span className="flex items-center gap-1.5"><CalendarClock className="size-4 text-primary dark:text-sky-400" />{new Date(`${event.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</span>
+                  <span className="flex items-center gap-1.5"><Clock3 className="size-4 text-primary dark:text-sky-400" />{formatTime(event.start)}–{formatTime(event.end)}</span>
+                  <span className="flex items-center gap-1.5"><MapPin className="size-4 text-primary dark:text-sky-400" />{event.location}</span>
                 </div>
               </div>
             </div>
@@ -281,7 +281,7 @@ function MeetingPanel({
 
             <div className="mt-7 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
               <section className="rounded-xl border border-border bg-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div className="flex items-center gap-2"><Users className="size-5 text-primary" /><h3 className="text-xl font-semibold">Can you make it?</h3></div>
+                <div className="flex items-center gap-2"><Users className="size-5 text-primary dark:text-sky-400" /><h3 className="text-xl font-semibold">Can you make it?</h3></div>
                 {canRespond ? (
                   <div className="mt-4 grid gap-2 sm:grid-cols-3">
                     {groups.map(({ status, label, icon: Icon, active }) => (
@@ -309,7 +309,7 @@ function MeetingPanel({
                     const people = responses.filter((response) => response.status === status);
                     return (
                       <div key={status} className="rounded-lg border border-transparent bg-secondary/60 p-3 dark:border-slate-700 dark:bg-slate-800">
-                        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide"><Icon className="size-3.5 text-primary" />{label} · {people.length}</p>
+                        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide"><Icon className="size-3.5 text-primary dark:text-sky-400" />{label} · {people.length}</p>
                         <p className="mt-2 text-xs leading-relaxed text-muted-foreground dark:text-slate-300">{people.length ? people.map((person) => person.name).join(", ") : "No responses yet"}</p>
                       </div>
                     );
