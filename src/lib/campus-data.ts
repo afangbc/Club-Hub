@@ -202,6 +202,31 @@ export type EventRsvp = {
   status: EventRsvpStatus;
 };
 
+export type TutorialTeacher = {
+  id: string;
+  name: string;
+  email: string;
+  department?: string | undefined;
+};
+
+export type TutorialOccurrence = {
+  /** Stable occurrence key: the schedule id plus its calendar date. */
+  id: string;
+  scheduleId: string;
+  teacherId: string;
+  teacherName: string;
+  date: string;
+  start: string;
+  end: string;
+  location: string;
+  recurring: boolean;
+  cancelled: boolean;
+  signupCount: number;
+  signedUp: boolean;
+  /** Only the hosting teacher and campus admins receive student names. */
+  studentNames?: string[] | undefined;
+};
+
 export type Announcement = {
   id: string;
   schoolWide?: boolean;

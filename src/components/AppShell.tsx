@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Bell,
   CalendarDays,
+  CalendarCheck,
   Compass,
   LogOut,
   Settings,
@@ -18,6 +19,7 @@ const nav = [
   { to: "/my-clubs", label: "My Clubs", icon: Users },
   { to: "/teams", label: "Join Team", icon: Trophy },
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
+  { to: "/tutorials", label: "Tutorials", icon: CalendarCheck },
   { to: "/announcements", label: "Announcements", icon: Bell },
 ] as const;
 

@@ -24,6 +24,8 @@ import {
   type Session,
   type StaffAccount,
   type Team,
+  type TutorialOccurrence,
+  type TutorialTeacher,
 } from "@/lib/campus-data";
 import {
   clearFailures,
@@ -68,6 +70,9 @@ export type AppState = {
   events: ClubEvent[];
   eventRsvps: EventRsvp[];
   announcements: Announcement[];
+  tutorialTeachers: TutorialTeacher[];
+  selectedTutorialTeachers: string[];
+  tutorials: TutorialOccurrence[];
   myClubs: string[];
   pending: string[];
   requests: JoinRequest[];
@@ -232,6 +237,9 @@ export async function loadState(): Promise<AppState> {
     events: [],
     eventRsvps: [],
     announcements: [],
+    tutorialTeachers: [],
+    selectedTutorialTeachers: [],
+    tutorials: [],
     myClubs: [],
     pending: [],
     requests: [],
@@ -398,6 +406,79 @@ export async function loadState(): Promise<AppState> {
       : clubs.some((club) => club.id === event.clubId),
   );
   const visibleEventIds = new Set(visibleEvents.map((event) => event.id));
+  const tutorialTeachers: TutorialTeacher[] = db.users
+    .filter(
+      (account) =>
+        account.schoolId === school.id && account.role === "teacher" && account.status === "active",
+    )
+    .map((account) => ({
+      id: account.id,
+      name: account.name,
+      email: account.email,
+      ...(account.department ? { department: account.department } : {}),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const selectedTutorialTeachers = db.tutorialTeachers
+    .filter((selection) => selection.studentId === user.id)
+    .map((selection) => selection.teacherId);
+  const visibleTutorialTeacherIds = new Set(
+    user.role === "admin"
+      ? tutorialTeachers.map((teacher) => teacher.id)
+      : user.role === "teacher"
+        ? [user.id]
+        : selectedTutorialTeachers,
+  );
+  const startDate = new Date(`${today()}T12:00:00`);
+  const dates = Array.from({ length: 43 }, (_, offset) => {
+    const date = new Date(startDate);
+    date.setDate(date.getDate() + offset);
+    return date.toISOString().slice(0, 10);
+  });
+  const tutorials: TutorialOccurrence[] = db.tutorialSchedules
+    .filter(
+      (schedule) =>
+        schedule.schoolId === school.id && visibleTutorialTeacherIds.has(schedule.teacherId),
+    )
+    .flatMap((schedule) => {
+      const occurrenceDates = schedule.recurring
+        ? dates.filter((date) => new Date(`${date}T12:00:00`).getDay() === schedule.weekday)
+        : schedule.date && schedule.date >= today() && dates.includes(schedule.date)
+          ? [schedule.date]
+          : [];
+      return occurrenceDates.map((date) => {
+        const signups = db.tutorialSignups.filter(
+          (signup) => signup.scheduleId === schedule.id && signup.date === date,
+        );
+        const teacher = db.users.find((account) => account.id === schedule.teacherId);
+        return {
+          id: `${schedule.id}:${date}`,
+          scheduleId: schedule.id,
+          teacherId: schedule.teacherId,
+          teacherName: teacher?.name ?? "Teacher",
+          date,
+          start: schedule.start,
+          end: schedule.end,
+          location: schedule.location,
+          recurring: schedule.recurring,
+          cancelled: db.tutorialCancellations.some(
+            (item) => item.scheduleId === schedule.id && item.date === date,
+          ),
+          signupCount: signups.length,
+          signedUp: signups.some((signup) => signup.studentId === user.id),
+          ...(user.role === "teacher" && schedule.teacherId === user.id
+            ? {
+                studentNames: signups
+                  .map(
+                    (signup) => db.users.find((account) => account.id === signup.studentId)?.name,
+                  )
+                  .filter((name): name is string => !!name)
+                  .sort((a, b) => a.localeCompare(b)),
+              }
+            : {}),
+        };
+      });
+    })
+    .sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`));
 
   return {
     ...empty,
@@ -434,6 +515,9 @@ export async function loadState(): Promise<AppState> {
         postedAt: a.postedAt,
       }))
       .sort((a, b) => b.postedAt.localeCompare(a.postedAt)),
+    tutorialTeachers,
+    selectedTutorialTeachers,
+    tutorials,
     myClubs: myClubIds,
     pending: mine.filter((m) => m.status === "pending").map((m) => m.clubId),
     requests,
@@ -1004,6 +1088,23 @@ export async function deleteAccount(): Promise<Result> {
     db.memberships = db.memberships.filter((m) => m.userId !== user.id);
     db.teamMemberships = db.teamMemberships.filter((membership) => membership.userId !== user.id);
     db.eventRsvps = db.eventRsvps.filter((rsvp) => rsvp.userId !== user.id);
+    const tutorialScheduleIds = new Set(
+      db.tutorialSchedules
+        .filter((schedule) => schedule.teacherId === user.id)
+        .map((schedule) => schedule.id),
+    );
+    db.tutorialSchedules = db.tutorialSchedules.filter(
+      (schedule) => schedule.teacherId !== user.id,
+    );
+    db.tutorialCancellations = db.tutorialCancellations.filter(
+      (item) => !tutorialScheduleIds.has(item.scheduleId),
+    );
+    db.tutorialTeachers = db.tutorialTeachers.filter(
+      (item) => item.studentId !== user.id && item.teacherId !== user.id,
+    );
+    db.tutorialSignups = db.tutorialSignups.filter(
+      (item) => item.studentId !== user.id && !tutorialScheduleIds.has(item.scheduleId),
+    );
     db.sessions = db.sessions.filter((s) => s.userId !== user.id);
     db.emailVerifications = db.emailVerifications.filter((item) => item.userId !== user.id);
     db.adminRequests = db.adminRequests.filter((request) => request.userId !== user.id);
@@ -1431,6 +1532,174 @@ export async function deleteAnnouncement(input: { id: string }): Promise<Result>
     )
       return fail("You don't manage that announcement's audience.");
     db.announcements = db.announcements.filter((a) => a.id !== post.id);
+    return ok;
+  });
+}
+
+// ---------------------------------------------------------------- tutorials
+
+const validTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+
+export async function createTutorial(input: {
+  recurring: boolean;
+  weekday?: number;
+  date?: string;
+  start: string;
+  end: string;
+  location: string;
+}): Promise<Result> {
+  const { user, error } = await requireEnrolled();
+  if (!user) return fail(error);
+  if (user.role !== "teacher") return fail("Only teachers can publish tutorial times.");
+  if (!validTime(input.start) || !validTime(input.end) || input.end <= input.start)
+    return fail("Choose a valid start and end time.");
+  if (!input.location.trim()) return fail("Enter where students should meet you.");
+  if (
+    input.recurring &&
+    (!Number.isInteger(input.weekday) || input.weekday! < 0 || input.weekday! > 6)
+  )
+    return fail("Choose a weekday.");
+  if (!input.recurring && (!/^\d{4}-\d{2}-\d{2}$/.test(input.date ?? "") || input.date! < today()))
+    return fail("Choose today or a future date.");
+
+  return transaction((db) => {
+    db.tutorialSchedules.push({
+      id: newId("tutorial"),
+      schoolId: user.schoolId!,
+      teacherId: user.id,
+      ...(input.recurring ? { weekday: input.weekday! } : { date: input.date! }),
+      start: input.start,
+      end: input.end,
+      location: input.location.trim().slice(0, 120),
+      recurring: input.recurring,
+      createdAt: new Date().toISOString(),
+    });
+    return ok;
+  });
+}
+
+export async function deleteTutorial(input: { scheduleId: string }): Promise<Result> {
+  const { user, error } = await requireEnrolled();
+  if (!user) return fail(error);
+  if (user.role !== "teacher") return fail("Only teachers can change tutorial times.");
+  return transaction((db) => {
+    const schedule = db.tutorialSchedules.find((item) => item.id === input.scheduleId);
+    if (!schedule || schedule.teacherId !== user.id) return fail("That tutorial time isn't yours.");
+    db.tutorialSchedules = db.tutorialSchedules.filter((item) => item.id !== schedule.id);
+    db.tutorialCancellations = db.tutorialCancellations.filter(
+      (item) => item.scheduleId !== schedule.id,
+    );
+    db.tutorialSignups = db.tutorialSignups.filter((item) => item.scheduleId !== schedule.id);
+    return ok;
+  });
+}
+
+export async function setTutorialCancellation(input: {
+  scheduleId: string;
+  date: string;
+  cancelled: boolean;
+}): Promise<Result> {
+  const { user, error } = await requireEnrolled();
+  if (!user) return fail(error);
+  if (user.role !== "teacher") return fail("Only teachers can cancel tutorial times.");
+  return transaction((db) => {
+    const schedule = db.tutorialSchedules.find((item) => item.id === input.scheduleId);
+    if (!schedule || schedule.teacherId !== user.id || !schedule.recurring)
+      return fail("That recurring tutorial time isn't yours.");
+    if (
+      input.date < today() ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(input.date) ||
+      new Date(`${input.date}T12:00:00`).getDay() !== schedule.weekday
+    )
+      return fail("That date is not one of this schedule's occurrences.");
+    db.tutorialCancellations = db.tutorialCancellations.filter(
+      (item) => !(item.scheduleId === schedule.id && item.date === input.date),
+    );
+    if (input.cancelled)
+      db.tutorialCancellations.push({ scheduleId: schedule.id, date: input.date });
+    return ok;
+  });
+}
+
+export async function setTutorialTeacher(input: {
+  teacherId: string;
+  selected: boolean;
+}): Promise<Result> {
+  const { user, error } = await requireEnrolled();
+  if (!user) return fail(error);
+  if (user.role !== "student") return fail("Only students build a tutorial teacher list.");
+  return transaction((db) => {
+    const teacher = db.users.find(
+      (account) =>
+        account.id === input.teacherId &&
+        account.schoolId === user.schoolId &&
+        account.role === "teacher" &&
+        account.status === "active",
+    );
+    if (!teacher) return fail("That teacher isn't available at your school.");
+    db.tutorialTeachers = db.tutorialTeachers.filter(
+      (item) => !(item.studentId === user.id && item.teacherId === teacher.id),
+    );
+    if (input.selected) db.tutorialTeachers.push({ studentId: user.id, teacherId: teacher.id });
+    if (!input.selected) {
+      const scheduleIds = new Set(
+        db.tutorialSchedules
+          .filter((schedule) => schedule.teacherId === teacher.id)
+          .map((schedule) => schedule.id),
+      );
+      db.tutorialSignups = db.tutorialSignups.filter(
+        (signup) => signup.studentId !== user.id || !scheduleIds.has(signup.scheduleId),
+      );
+    }
+    return ok;
+  });
+}
+
+export async function setTutorialSignup(input: {
+  scheduleId: string;
+  date: string;
+  attending: boolean;
+}): Promise<Result> {
+  const { user, error } = await requireEnrolled();
+  if (!user) return fail(error);
+  if (user.role !== "student") return fail("Only students can sign up for tutorials.");
+  return transaction((db) => {
+    const schedule = db.tutorialSchedules.find((item) => item.id === input.scheduleId);
+    if (!schedule || schedule.schoolId !== user.schoolId) return fail("Tutorial time not found.");
+    if (
+      input.date < today() ||
+      (schedule.recurring
+        ? new Date(`${input.date}T12:00:00`).getDay() !== schedule.weekday
+        : input.date !== schedule.date)
+    )
+      return fail("That tutorial occurrence is not available.");
+    if (
+      !db.tutorialTeachers.some(
+        (item) => item.studentId === user.id && item.teacherId === schedule.teacherId,
+      )
+    )
+      return fail("Add this teacher to your list first.");
+    if (
+      db.tutorialCancellations.some(
+        (item) => item.scheduleId === schedule.id && item.date === input.date,
+      )
+    )
+      return fail("That tutorial was cancelled.");
+    db.tutorialSignups = db.tutorialSignups.filter(
+      (item) =>
+        !(
+          item.scheduleId === schedule.id &&
+          item.date === input.date &&
+          item.studentId === user.id
+        ),
+    );
+    if (input.attending)
+      db.tutorialSignups.push({
+        scheduleId: schedule.id,
+        date: input.date,
+        studentId: user.id,
+        createdAt: new Date().toISOString(),
+      });
     return ok;
   });
 }

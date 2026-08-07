@@ -6,11 +6,13 @@ import {
   createClubFn,
   createEventFn,
   createTeamFn,
+  createTutorialFn,
   createSchoolFn,
   deleteAccountFn,
   deleteAnnouncementFn,
   deleteClubFn,
   deleteEventFn,
+  deleteTutorialFn,
   getState,
   joinClubFn,
   joinSchoolFn,
@@ -26,6 +28,9 @@ import {
   setSchoolCodeFn,
   setSchoolColorsFn,
   setEventRsvpFn,
+  setTutorialCancellationFn,
+  setTutorialSignupFn,
+  setTutorialTeacherFn,
   signInFn,
   signOutFn,
   signUpFn,
@@ -54,6 +59,8 @@ import {
   type Session,
   type StaffAccount,
   type Team,
+  type TutorialOccurrence,
+  type TutorialTeacher,
 } from "./campus-data";
 import type { ClubInput } from "@/server/service";
 
@@ -81,6 +88,9 @@ type State = {
   events: ClubEvent[];
   eventRsvps: EventRsvp[];
   announcements: Announcement[];
+  tutorialTeachers: TutorialTeacher[];
+  selectedTutorialTeachers: string[];
+  tutorials: TutorialOccurrence[];
   myClubs: string[];
   pending: string[];
   requests: JoinRequest[];
@@ -132,6 +142,22 @@ type State = {
     [{ clubId?: string; teamId?: string; schoolWide?: boolean; title: string; body: string }]
   >;
   removeAnnouncement: Action<[string]>;
+  createTutorial: Action<
+    [
+      {
+        recurring: boolean;
+        weekday?: number;
+        date?: string;
+        start: string;
+        end: string;
+        location: string;
+      },
+    ]
+  >;
+  deleteTutorial: Action<[string]>;
+  setTutorialCancellation: Action<[string, string, boolean]>;
+  setTutorialTeacher: Action<[string, boolean]>;
+  setTutorialSignup: Action<[string, string, boolean]>;
   resolveRequest: Action<[string, boolean]>;
   reviewStaff: Action<[string, boolean]>;
   updateSchoolCode: Action<[string]>;
@@ -169,6 +195,9 @@ const emptyState: AppState = {
   events: [],
   eventRsvps: [],
   announcements: [],
+  tutorialTeachers: [],
+  selectedTutorialTeachers: [],
+  tutorials: [],
   myClubs: [],
   pending: [],
   requests: [],
@@ -268,6 +297,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       events: state.events,
       eventRsvps: state.eventRsvps,
       announcements: state.announcements,
+      tutorialTeachers: state.tutorialTeachers,
+      selectedTutorialTeachers: state.selectedTutorialTeachers,
+      tutorials: state.tutorials,
       myClubs: state.myClubs,
       pending: state.pending,
       requests: state.requests,
@@ -311,6 +343,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setEventRsvp: (eventId, status) => run(() => setEventRsvpFn({ data: { eventId, status } })),
       addAnnouncement: (post) => run(() => createAnnouncementFn({ data: post })),
       removeAnnouncement: (id) => run(() => deleteAnnouncementFn({ data: { id } })),
+      createTutorial: (input) => run(() => createTutorialFn({ data: input })),
+      deleteTutorial: (scheduleId) => run(() => deleteTutorialFn({ data: { scheduleId } })),
+      setTutorialCancellation: (scheduleId, date, cancelled) =>
+        run(() => setTutorialCancellationFn({ data: { scheduleId, date, cancelled } })),
+      setTutorialTeacher: (teacherId, selected) =>
+        run(() => setTutorialTeacherFn({ data: { teacherId, selected } })),
+      setTutorialSignup: (scheduleId, date, attending) =>
+        run(() => setTutorialSignupFn({ data: { scheduleId, date, attending } })),
 
       resolveRequest: (id, approve) => run(() => reviewMembershipFn({ data: { id, approve } })),
       reviewStaff: (userId, approve) => run(() => reviewStaffFn({ data: { userId, approve } })),

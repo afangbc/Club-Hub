@@ -351,16 +351,24 @@ export const setEventRsvpFn = createServerFn({ method: "POST" })
   });
 
 export const createAnnouncementFn = createServerFn({ method: "POST" })
-  .validator((d: { clubId?: string; teamId?: string; schoolWide?: boolean; title: string; body: string }) => {
-    const raw = (d ?? {}) as Partial<typeof d>;
-    return {
-      clubId: str(raw.clubId, 60),
-      teamId: str(raw.teamId, 60),
-      schoolWide: flag(raw.schoolWide),
-      title: str(raw.title, 120),
-      body: str(raw.body, 2000),
-    };
-  })
+  .validator(
+    (d: {
+      clubId?: string;
+      teamId?: string;
+      schoolWide?: boolean;
+      title: string;
+      body: string;
+    }) => {
+      const raw = (d ?? {}) as Partial<typeof d>;
+      return {
+        clubId: str(raw.clubId, 60),
+        teamId: str(raw.teamId, 60),
+        schoolWide: flag(raw.schoolWide),
+        title: str(raw.title, 120),
+        body: str(raw.body, 2000),
+      };
+    },
+  )
   .handler(async ({ data }): Promise<Result> => {
     const { createAnnouncement } = await import("@/server/service");
     return createAnnouncement(data);
@@ -398,4 +406,69 @@ export const setSchoolColorsFn = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<Result> => {
     const { setSchoolColors } = await import("@/server/service");
     return setSchoolColors(data);
+  });
+
+export const createTutorialFn = createServerFn({ method: "POST" })
+  .validator(
+    (d: {
+      recurring: boolean;
+      weekday?: number;
+      date?: string;
+      start: string;
+      end: string;
+      location: string;
+    }) => {
+      const raw = (d ?? {}) as Partial<typeof d>;
+      return {
+        recurring: flag(raw.recurring),
+        ...(typeof raw.weekday === "number" ? { weekday: raw.weekday } : {}),
+        ...(raw.date === undefined ? {} : { date: str(raw.date, 10) }),
+        start: str(raw.start, 5),
+        end: str(raw.end, 5),
+        location: str(raw.location, 120),
+      };
+    },
+  )
+  .handler(async ({ data }): Promise<Result> => {
+    const { createTutorial } = await import("@/server/service");
+    return createTutorial(data);
+  });
+
+export const deleteTutorialFn = createServerFn({ method: "POST" })
+  .validator((d: { scheduleId: string }) => ({ scheduleId: str((d ?? {}).scheduleId, 80) }))
+  .handler(async ({ data }): Promise<Result> => {
+    const { deleteTutorial } = await import("@/server/service");
+    return deleteTutorial(data);
+  });
+
+export const setTutorialCancellationFn = createServerFn({ method: "POST" })
+  .validator((d: { scheduleId: string; date: string; cancelled: boolean }) => ({
+    scheduleId: str((d ?? {}).scheduleId, 80),
+    date: str((d ?? {}).date, 10),
+    cancelled: flag((d ?? {}).cancelled),
+  }))
+  .handler(async ({ data }): Promise<Result> => {
+    const { setTutorialCancellation } = await import("@/server/service");
+    return setTutorialCancellation(data);
+  });
+
+export const setTutorialTeacherFn = createServerFn({ method: "POST" })
+  .validator((d: { teacherId: string; selected: boolean }) => ({
+    teacherId: str((d ?? {}).teacherId, 80),
+    selected: flag((d ?? {}).selected),
+  }))
+  .handler(async ({ data }): Promise<Result> => {
+    const { setTutorialTeacher } = await import("@/server/service");
+    return setTutorialTeacher(data);
+  });
+
+export const setTutorialSignupFn = createServerFn({ method: "POST" })
+  .validator((d: { scheduleId: string; date: string; attending: boolean }) => ({
+    scheduleId: str((d ?? {}).scheduleId, 80),
+    date: str((d ?? {}).date, 10),
+    attending: flag((d ?? {}).attending),
+  }))
+  .handler(async ({ data }): Promise<Result> => {
+    const { setTutorialSignup } = await import("@/server/service");
+    return setTutorialSignup(data);
   });

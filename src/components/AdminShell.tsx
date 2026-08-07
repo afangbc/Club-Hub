@@ -1,5 +1,15 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Building2, CalendarPlus, KeyRound, LogOut, Megaphone, Settings, UserCog, Users } from "lucide-react";
+import {
+  Building2,
+  CalendarCheck,
+  CalendarPlus,
+  KeyRound,
+  LogOut,
+  Megaphone,
+  Settings,
+  UserCog,
+  Users,
+} from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { homeFor, roleLabel, schoolInitials } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
@@ -8,6 +18,7 @@ const nav = [
   { to: "/admin", label: "Campus", icon: KeyRound },
   { to: "/admin/clubs", label: "Clubs", icon: Building2 },
   { to: "/admin/events", label: "Meetings / Events", icon: CalendarPlus },
+  { to: "/admin/tutorials", label: "Tutorials", icon: CalendarCheck },
   { to: "/admin/announcements", label: "Announcements", icon: Megaphone },
   { to: "/admin/teachers", label: "Staff Accounts", icon: UserCog },
   { to: "/admin/users", label: "All Users", icon: Users },
@@ -16,8 +27,7 @@ const nav = [
 export function AdminShell({ children }: { children: ReactNode }) {
   const { session, school, ready, signOut, pendingStaff } = useSession();
   const navigate = useNavigate();
-  const isAdmin =
-    session?.role === "admin" && session.status === "active" && session.emailVerified;
+  const isAdmin = session?.role === "admin" && session.status === "active" && session.emailVerified;
 
   useEffect(() => {
     if (!ready) return;
