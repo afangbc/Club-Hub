@@ -306,11 +306,11 @@ function MeetingPanel({
         side="top"
         style={
           {
-            "--meeting-primary": schoolPrimary,
-            "--meeting-accent": schoolAccent,
+            "--meeting-primary-raw": schoolPrimary,
+            "--meeting-accent-raw": schoolAccent,
           } as CSSProperties
         }
-        className="z-[110] max-h-[94vh] overflow-y-auto border-b-4 border-[var(--meeting-primary)] bg-secondary p-0 [&>button]:hidden"
+        className="meeting-panel z-[110] max-h-[94vh] overflow-y-auto border-b-4 border-[var(--meeting-primary)] bg-secondary p-0 [&>button]:hidden"
       >
         {event && (
           <div className="mx-auto w-full max-w-5xl p-4 sm:p-6">
@@ -322,7 +322,8 @@ function MeetingPanel({
               <div
                 className="relative border-b border-border p-5 sm:p-7"
                 style={{
-                  background: `linear-gradient(135deg, color-mix(in srgb, ${schoolPrimary} 18%, var(--color-card)), color-mix(in srgb, ${schoolAccent} 8%, var(--color-card)))`,
+                  background:
+                    "linear-gradient(135deg, color-mix(in srgb, var(--meeting-primary) 12%, var(--color-card)), color-mix(in srgb, var(--meeting-accent) 7%, var(--color-card)))",
                 }}
               >
                 <SheetClose className="absolute right-4 top-4 grid size-9 place-items-center rounded-full border border-[var(--meeting-accent)] bg-card/90 text-foreground shadow-sm transition hover:scale-105 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--meeting-accent)]">
@@ -334,10 +335,13 @@ function MeetingPanel({
                     className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 bg-card shadow-sm ring-2"
                     style={
                       {
-                        borderColor: schoolAccent,
-                        backgroundColor: `color-mix(in srgb, ${schoolPrimary} 20%, transparent)`,
-                        boxShadow: `0 0 24px color-mix(in srgb, ${schoolAccent} 18%, transparent)`,
-                        "--tw-ring-color": `color-mix(in srgb, ${schoolAccent} 30%, transparent)`,
+                        borderColor: "var(--meeting-accent)",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--meeting-primary) 12%, var(--color-card))",
+                        boxShadow:
+                          "0 0 18px color-mix(in srgb, var(--meeting-accent) 12%, transparent)",
+                        "--tw-ring-color":
+                          "color-mix(in srgb, var(--meeting-accent) 22%, transparent)",
                       } as CSSProperties
                     }
                   >

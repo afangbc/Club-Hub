@@ -172,7 +172,9 @@ body::-webkit-scrollbar {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    transition: background-color 200ms ease, color 200ms ease;
+    transition:
+      background-color 200ms ease,
+      color 200ms ease;
   }
 
   button,
@@ -261,6 +263,22 @@ body::-webkit-scrollbar {
   }
 }
 
+/*
+ * Campus colors are chosen by schools, so their raw values are not guaranteed
+ * to remain readable on both themes. Mix them toward a theme-safe anchor while
+ * preserving their hue: darker and calmer on white, brighter and softer on
+ * dark surfaces.
+ */
+.meeting-panel {
+  --meeting-primary: color-mix(in oklab, var(--meeting-primary-raw) 68%, #24324a);
+  --meeting-accent: color-mix(in oklab, var(--meeting-accent-raw) 62%, #334155);
+}
+
+.dark .meeting-panel {
+  --meeting-primary: color-mix(in oklab, var(--meeting-primary-raw) 70%, #dbeafe);
+  --meeting-accent: color-mix(in oklab, var(--meeting-accent-raw) 72%, #f8fafc);
+}
+
 @keyframes control-flow-in {
   from {
     opacity: 0;
@@ -299,7 +317,10 @@ body::-webkit-scrollbar {
 
 .flow-nav-tab {
   position: relative;
-  transition: color 240ms ease, opacity 240ms ease, transform 240ms ease;
+  transition:
+    color 240ms ease,
+    opacity 240ms ease,
+    transform 240ms ease;
 }
 
 .flow-nav-tab::after {
