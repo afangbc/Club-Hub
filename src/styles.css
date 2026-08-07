@@ -312,6 +312,11 @@ body::-webkit-scrollbar {
   will-change: transform, opacity;
 }
 
+.flow-up-in {
+  animation: card-flow-up 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
 @utility card-surface {
   background-color: var(--color-card);
   border: 1px solid var(--color-border);
@@ -327,7 +332,8 @@ body::-webkit-scrollbar {
 
 @media (prefers-reduced-motion: reduce) {
   .card-surface,
-  .control-flow-in {
+  .control-flow-in,
+  .flow-up-in {
     animation: none;
   }
 }
