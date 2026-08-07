@@ -92,6 +92,13 @@ export const joinSchoolFn = createServerFn({ method: "POST" })
     return joinSchool(data);
   });
 
+export const leaveSchoolFn = createServerFn({ method: "POST" }).handler(
+  async (): Promise<Result> => {
+    const { leaveSchool } = await import("@/server/service");
+    return leaveSchool();
+  },
+);
+
 export const createTeamFn = createServerFn({ method: "POST" })
   .validator((d: { name: string; sport: string }) => {
     const raw = (d ?? {}) as Partial<typeof d>;

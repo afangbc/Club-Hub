@@ -17,6 +17,7 @@ import {
   joinClubFn,
   joinSchoolFn,
   joinTeamFn,
+  leaveSchoolFn,
   leaveClubFn,
   requestAdminFn,
   requestClubFn,
@@ -123,6 +124,7 @@ type State = {
   verifyEmail: Action<[string]>;
   resendVerification: Action<[]>;
   joinSchool: Action<[string]>;
+  leaveSchool: Action<[]>;
   updateProfile: Action<[{ name: string; email: string; grade: string }]>;
   changePassword: Action<[string, string, string]>;
   setPref: Action<[keyof Prefs, boolean]>;
@@ -322,6 +324,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       verifyEmail: (code) => run(() => verifyEmailFn({ data: { code } })),
       resendVerification: () => run(() => resendVerificationFn()),
       joinSchool: (code) => run(() => joinSchoolFn({ data: { code } })),
+      leaveSchool: () => run(() => leaveSchoolFn()),
       updateProfile: (input) => run(() => updateProfileFn({ data: input })),
       changePassword: (current, next, confirm) =>
         run(() => changePasswordFn({ data: { current, next, confirm } })),

@@ -786,6 +786,70 @@ export async function joinSchool(input: { code: string }): Promise<Result> {
   return ok;
 }
 
+export async function leaveSchool(): Promise<Result> {
+  const { user, error } = await requireEnrolled();
+  if (!user) return fail(error);
+  if (user.role === "admin")
+    return fail("School admins must transfer campus ownership instead of leaving a school.");
+
+  const result = await transaction((db): Result => {
+    const record = db.users.find((candidate) => candidate.id === user.id);
+    if (!record?.schoolId) return fail("Your account doesn't currently belong to a campus.");
+
+    const oldSchoolId = record.schoolId;
+    const sponsoredClubs = db.clubs.filter((club) => club.sponsorId === user.id);
+    const sponsoredTeams = db.teams.filter((team) => team.sponsorId === user.id);
+    const replacementAdmin = db.users.find(
+      (candidate) =>
+        candidate.schoolId === oldSchoolId &&
+        candidate.role === "admin" &&
+        candidate.status === "active",
+    );
+
+    if ((sponsoredClubs.length > 0 || sponsoredTeams.length > 0) && !replacementAdmin)
+      return fail(
+        "Your sponsored clubs and teams need an active school admin before you can leave.",
+      );
+
+    if (replacementAdmin) {
+      sponsoredClubs.forEach((club) => {
+        club.sponsorId = replacementAdmin.id;
+      });
+      sponsoredTeams.forEach((team) => {
+        team.sponsorId = replacementAdmin.id;
+      });
+    }
+
+    db.memberships = db.memberships.filter((membership) => membership.userId !== user.id);
+    db.teamMemberships = db.teamMemberships.filter((membership) => membership.userId !== user.id);
+    db.eventRsvps = db.eventRsvps.filter((rsvp) => rsvp.userId !== user.id);
+
+    const tutorialScheduleIds = new Set(
+      db.tutorialSchedules
+        .filter((schedule) => schedule.teacherId === user.id)
+        .map((schedule) => schedule.id),
+    );
+    db.tutorialSchedules = db.tutorialSchedules.filter(
+      (schedule) => schedule.teacherId !== user.id,
+    );
+    db.tutorialCancellations = db.tutorialCancellations.filter(
+      (cancellation) => !tutorialScheduleIds.has(cancellation.scheduleId),
+    );
+    db.tutorialTeachers = db.tutorialTeachers.filter(
+      (selection) => selection.studentId !== user.id && selection.teacherId !== user.id,
+    );
+    db.tutorialSignups = db.tutorialSignups.filter(
+      (signup) => signup.studentId !== user.id && !tutorialScheduleIds.has(signup.scheduleId),
+    );
+
+    record.schoolId = null;
+    if (record.role === "teacher") record.status = "pending";
+    return ok;
+  });
+
+  return result;
+}
+
 // ------------------------------------------------------- owner administration
 
 type SchoolSetupInput = {
