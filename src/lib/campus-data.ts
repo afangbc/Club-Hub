@@ -22,6 +22,12 @@ export const CATEGORIES: ClubCategory[] = ["Academic", "STEM", "Service", "Arts"
 export const GRADES = ["9th", "10th", "11th", "12th"] as const;
 export type Grade = (typeof GRADES)[number];
 
+/** ClubHub's campus-neutral house palette, available as an admin branding preset. */
+export const CLUBHUB_COLORS = {
+  primaryColor: "#243b80",
+  secondaryColor: "#2dd4bf",
+} as const;
+
 export type Session = {
   id: string;
   name: string;
