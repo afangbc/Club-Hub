@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Globe, Lock, Plus, Search, Trash2 } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Eye, Globe, Lock, Plus, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ClubForm } from "@/components/ClubForm";
 import { SmoothCollapse } from "@/components/SmoothCollapse";
@@ -136,12 +136,18 @@ function ClubRow({
     <article className="card-surface p-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex min-w-52 flex-1 items-center gap-3">
-          {club.logo && <img src={club.logo} alt="" className="size-11 rounded-lg bg-card object-contain p-1 shadow-sm" />}
+          {club.logo && (
+            <img
+              src={club.logo}
+              alt=""
+              className="size-11 rounded-lg bg-card object-contain p-1 shadow-sm"
+            />
+          )}
           <div>
-          <h2 className="text-2xl leading-tight">{club.name}</h2>
-          <p className="text-xs text-muted-foreground">
-            {club.sponsorName} · {club.meets} · {club.room} · {club.members} members
-          </p>
+            <h2 className="text-2xl leading-tight">{club.name}</h2>
+            <p className="text-xs text-muted-foreground">
+              {club.sponsorName} · {club.meets} · {club.room} · {club.members} members
+            </p>
           </div>
         </div>
         <span
@@ -158,6 +164,13 @@ function ClubRow({
           )}
           {club.visibility}
         </span>
+        <Link
+          to="/clubs/$clubId"
+          params={{ clubId: club.id }}
+          className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+        >
+          <Eye className="size-4" /> View page
+        </Link>
         <button
           onClick={() => setOpen((o) => !o)}
           className="rounded-md border border-input px-3 py-2 text-sm font-semibold hover:bg-secondary"

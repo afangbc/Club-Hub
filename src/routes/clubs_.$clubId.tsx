@@ -49,6 +49,12 @@ function ClubDetails() {
     (myClubs.includes(club.id) ||
       session?.role === "admin" ||
       (session?.role === "teacher" && club.sponsorId === session.id));
+  const backTo =
+    session?.role === "admin"
+      ? ({ to: "/admin/clubs", label: "Campus Clubs" } as const)
+      : session?.role === "teacher"
+        ? ({ to: "/manage", label: "My Clubs" } as const)
+        : ({ to: "/my-clubs", label: "My Clubs" } as const);
 
   if (!club || !canView) {
     return (
@@ -59,10 +65,10 @@ function ClubDetails() {
           Join this club first to view its members, posts, and schedule.
         </p>
         <Link
-          to="/my-clubs"
+          to={backTo.to}
           className="mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
         >
-          <ArrowLeft className="size-4" /> Back to My Clubs
+          <ArrowLeft className="size-4" /> Back to {backTo.label}
         </Link>
       </div>
     );
@@ -79,10 +85,10 @@ function ClubDetails() {
   return (
     <div>
       <Link
-        to="/my-clubs"
+        to={backTo.to}
         className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
       >
-        <ArrowLeft className="size-4" /> My Clubs
+        <ArrowLeft className="size-4" /> {backTo.label}
       </Link>
 
       <section className="card-surface mt-4 overflow-hidden">
