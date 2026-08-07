@@ -17,7 +17,9 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "Find clubs, join them, and see every meeting on one calendar.",
       },
+      { name: "robots", content: "index, follow" },
     ],
+    links: [{ rel: "canonical", href: "https://club-hub-self.vercel.app/" }],
   }),
   component: Index,
 });
@@ -66,6 +68,21 @@ function Index() {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: "ClubHub",
+            url: "https://club-hub-self.vercel.app/",
+            applicationCategory: "EducationalApplication",
+            operatingSystem: "Web",
+            description:
+              "A school club management platform for clubs, teams, meetings, tutorials, and announcements.",
+          }),
+        }}
+      />
       <section className="relative flex flex-col justify-between bg-primary px-8 py-12 text-primary-foreground lg:px-14">
         <div className="flex items-center gap-3">
           <span className="flex size-10 items-center justify-center rounded-lg bg-brand pt-0.5 font-display text-[2rem] leading-none text-brand-foreground">
