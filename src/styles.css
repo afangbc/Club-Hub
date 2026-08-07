@@ -85,8 +85,9 @@
   --secondary-foreground: oklch(0.35 0.13 264);
   --muted: oklch(0.945 0.018 250);
   --muted-foreground: oklch(0.52 0.035 258);
-  --accent: #ccfbf1;
-  --accent-foreground: #134e4a;
+  /* Soft campus accent surfaces derive from the school's secondary color. */
+  --accent: color-mix(in oklab, var(--brand) 18%, white);
+  --accent-foreground: color-mix(in oklab, var(--brand) 48%, #172033);
   --success: oklch(0.6 0.13 155);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
@@ -141,8 +142,8 @@ body::-webkit-scrollbar {
   --secondary-foreground: oklch(0.984 0.003 247.858);
   --muted: oklch(0.279 0.041 260.031);
   --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
+  --accent: color-mix(in oklab, var(--brand) 18%, oklch(0.279 0.041 260.031));
+  --accent-foreground: color-mix(in oklab, var(--brand) 38%, white);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(1 0 0 / 10%);
