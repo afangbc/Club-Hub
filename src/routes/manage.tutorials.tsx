@@ -159,7 +159,7 @@ function StaffTutorials() {
           </form>
           {rules.some((item) => item.recurring) && (
             <div className="card-surface p-4">
-              <h3 className="text-lg">Weekly rules</h3>
+                <h3 className="text-lg">Weekly tutorials</h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 Removing a rule deletes all of its future weekly times.
               </p>
