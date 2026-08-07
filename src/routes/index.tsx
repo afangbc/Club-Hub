@@ -58,17 +58,19 @@ function Index() {
   const [busy, setBusy] = useState(false);
 
   const destination = homeFor(session);
+  const leavingIndex =
+    !!session && (!session.emailVerified || joined || !!session.owner || session.role === "admin");
 
   useEffect(() => {
     // An unconfirmed address goes to the code screen before anything else.
     // Admins and owners never enter a campus code, so they skip step 2 entirely.
-    if (
-      ready &&
-      session &&
-      (!session.emailVerified || joined || session.owner || session.role === "admin")
-    )
-      navigate({ to: destination, replace: true });
-  }, [ready, session, joined, destination, navigate]);
+    if (ready && leavingIndex) navigate({ to: destination, replace: true });
+  }, [ready, leavingIndex, destination, navigate]);
+
+  // Never paint an auth step until the server has confirmed the session. After
+  // sign-in, keep the short redirect frame neutral instead of flashing the
+  // campus-code form for accounts that already belong to a school.
+  if (!ready || leavingIndex) return <OpeningClubHub />;
 
   const step: 1 | 2 = session ? 2 : 1;
   const placeholder = role === "student" ? "student@school.edu" : "first.last@district.org";
@@ -330,6 +332,22 @@ function Index() {
           )}
         </div>
       </section>
+    </div>
+  );
+}
+
+function OpeningClubHub() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-primary text-primary-foreground">
+      <div className="flex items-center gap-3" role="status" aria-label="Opening ClubHub">
+        <span className="flex size-11 items-center justify-center rounded-lg bg-brand pt-0.5 font-display text-[2rem] leading-none text-brand-foreground">
+          C
+        </span>
+        <div>
+          <p className="font-display text-4xl leading-none">ClubHub</p>
+          <p className="mt-1 text-xs uppercase tracking-[0.2em] opacity-65">Opening your campus</p>
+        </div>
+      </div>
     </div>
   );
 }
