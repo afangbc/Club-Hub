@@ -161,7 +161,7 @@ function StaffTutorials() {
             <div className="card-surface p-4">
                 <h3 className="text-lg">Weekly tutorials</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Removing a rule deletes all of its future weekly times.
+                  Removing a tutorial deletes all of its future weekly times.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {rules
