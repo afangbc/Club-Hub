@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Lock, Globe, Search, Check, Clock } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Lock, Globe, Search, Check, Clock, ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { SmoothCollapse } from "@/components/SmoothCollapse";
@@ -95,7 +95,7 @@ function ClubsPage() {
   );
 }
 
-export function ClubCard({ club }: { club: Club }) {
+export function ClubCard({ club, details = false }: { club: Club; details?: boolean }) {
   const { myClubs, pending, joinClub, leaveClub, requestClub } = useSession();
   const [showHow, setShowHow] = useState(false);
   const [note, setNote] = useState("");
@@ -116,7 +116,11 @@ export function ClubCard({ club }: { club: Club }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           {club.logo && (
-            <img src={club.logo} alt="" className="size-11 shrink-0 rounded-lg bg-card object-contain p-1 shadow-sm" />
+            <img
+              src={club.logo}
+              alt=""
+              className="size-11 shrink-0 rounded-lg bg-card object-contain p-1 shadow-sm"
+            />
           )}
           <h2 className="text-2xl leading-tight">{club.name}</h2>
         </div>
@@ -176,9 +180,19 @@ export function ClubCard({ club }: { club: Club }) {
       <div className="mt-auto flex gap-2 pt-4">
         {isMember ? (
           <>
-            <span className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-success/12 py-2 text-sm font-semibold text-success">
-              <Check className="size-4" /> Joined
-            </span>
+            {details ? (
+              <Link
+                to="/clubs/$clubId"
+                params={{ clubId: club.id }}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-primary py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+              >
+                View club <ArrowRight className="size-4" />
+              </Link>
+            ) : (
+              <span className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-success/12 py-2 text-sm font-semibold text-success">
+                <Check className="size-4" /> Joined
+              </span>
+            )}
             <button
               disabled={busy}
               onClick={() => void act(() => leaveClub(club.id))}

@@ -28,6 +28,7 @@ import { Route as AdminClubsRouteImport } from './routes/admin.clubs'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminTeachersRouteImport } from './routes/admin.teachers'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as ClubsClubIdRouteImport } from './routes/clubs_.$clubId'
 import { Route as ManageIndexRouteImport } from './routes/manage.index'
 import { Route as ManageAnnouncementsRouteImport } from './routes/manage.announcements'
 import { Route as ManageEventsRouteImport } from './routes/manage.events'
@@ -129,6 +130,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const ClubsClubIdRoute = ClubsClubIdRouteImport.update({
+  id: '/clubs_/$clubId',
+  path: '/clubs/$clubId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ManageIndexRoute = ManageIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -174,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/admin/events': typeof AdminEventsRoute
   '/admin/teachers': typeof AdminTeachersRoute
   '/admin/users': typeof AdminUsersRoute
+  '/clubs/$clubId': typeof ClubsClubIdRoute
   '/manage/announcements': typeof ManageAnnouncementsRoute
   '/manage/events': typeof ManageEventsRoute
   '/manage/requests': typeof ManageRequestsRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/admin/events': typeof AdminEventsRoute
   '/admin/teachers': typeof AdminTeachersRoute
   '/admin/users': typeof AdminUsersRoute
+  '/clubs/$clubId': typeof ClubsClubIdRoute
   '/manage/announcements': typeof ManageAnnouncementsRoute
   '/manage/events': typeof ManageEventsRoute
   '/manage/requests': typeof ManageRequestsRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/admin/events': typeof AdminEventsRoute
   '/admin/teachers': typeof AdminTeachersRoute
   '/admin/users': typeof AdminUsersRoute
+  '/clubs_/$clubId': typeof ClubsClubIdRoute
   '/manage/announcements': typeof ManageAnnouncementsRoute
   '/manage/events': typeof ManageEventsRoute
   '/manage/requests': typeof ManageRequestsRoute
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/teachers'
     | '/admin/users'
+    | '/clubs/$clubId'
     | '/manage/announcements'
     | '/manage/events'
     | '/manage/requests'
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/teachers'
     | '/admin/users'
+    | '/clubs/$clubId'
     | '/manage/announcements'
     | '/manage/events'
     | '/manage/requests'
@@ -303,6 +314,7 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/teachers'
     | '/admin/users'
+    | '/clubs_/$clubId'
     | '/manage/announcements'
     | '/manage/events'
     | '/manage/requests'
@@ -325,6 +337,7 @@ export interface RootRouteChildren {
   RequestAdminRoute: typeof RequestAdminRoute
   TeamsRoute: typeof TeamsRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  ClubsClubIdRoute: typeof ClubsClubIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -462,6 +475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/clubs_/$clubId': {
+      id: '/clubs_/$clubId'
+      path: '/clubs/$clubId'
+      fullPath: '/clubs/$clubId'
+      preLoaderRoute: typeof ClubsClubIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/manage/': {
       id: '/manage/'
       path: '/'
@@ -553,6 +573,7 @@ const rootRouteChildren: RootRouteChildren = {
   RequestAdminRoute: RequestAdminRoute,
   TeamsRoute: TeamsRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  ClubsClubIdRoute: ClubsClubIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

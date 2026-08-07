@@ -41,6 +41,7 @@ import {
   type AdminRequest,
   type Announcement,
   type Club,
+  type ClubMember,
   type ClubEvent,
   type EventRsvp,
   type EventRsvpStatus,
@@ -75,6 +76,7 @@ type State = {
   prefs: Prefs;
   school: AppState["school"];
   clubs: Club[];
+  clubMembers: Record<string, ClubMember[]>;
   teams: Team[];
   events: ClubEvent[];
   eventRsvps: EventRsvp[];
@@ -95,7 +97,18 @@ type State = {
   ownersConfigured: boolean;
   refresh: () => Promise<void>;
   signIn: Action<[string, string]>;
-  signUp: Action<[{ name: string; email: string; role: Role; grade: string; password: string; schoolCode: string }]>;
+  signUp: Action<
+    [
+      {
+        name: string;
+        email: string;
+        role: Role;
+        grade: string;
+        password: string;
+        schoolCode: string;
+      },
+    ]
+  >;
   signOut: Action<[]>;
   verifyEmail: Action<[string]>;
   resendVerification: Action<[]>;
@@ -115,15 +128,26 @@ type State = {
   addEvent: Action<[Omit<ClubEvent, "id">]>;
   removeEvent: Action<[string]>;
   setEventRsvp: Action<[string, EventRsvpStatus]>;
-  addAnnouncement: Action<[{ clubId?: string; teamId?: string; schoolWide?: boolean; title: string; body: string }]>;
+  addAnnouncement: Action<
+    [{ clubId?: string; teamId?: string; schoolWide?: boolean; title: string; body: string }]
+  >;
   removeAnnouncement: Action<[string]>;
   resolveRequest: Action<[string, boolean]>;
   reviewStaff: Action<[string, boolean]>;
   updateSchoolCode: Action<[string]>;
   updateSchoolColors: Action<[{ primaryColor: string; secondaryColor: string }]>;
-  requestAdmin: Action<[{
-    name: string; district: string; mascot: string; primaryColor: string; secondaryColor: string; message: string;
-  }]>;
+  requestAdmin: Action<
+    [
+      {
+        name: string;
+        district: string;
+        mascot: string;
+        primaryColor: string;
+        secondaryColor: string;
+        message: string;
+      },
+    ]
+  >;
   reviewAdminRequest: Action<[string, boolean]>;
   revokeAdmin: Action<[string]>;
   createSchool: (input: {
@@ -140,6 +164,7 @@ const emptyState: AppState = {
   prefs: defaultPrefs,
   school: null,
   clubs: [],
+  clubMembers: {},
   teams: [],
   events: [],
   eventRsvps: [],
@@ -193,7 +218,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     const school = state.school;
     if (!school) {
-      ["--primary", "--primary-foreground", "--brand", "--brand-foreground"].forEach((key) => root.style.removeProperty(key));
+      ["--primary", "--primary-foreground", "--brand", "--brand-foreground"].forEach((key) =>
+        root.style.removeProperty(key),
+      );
       return;
     }
     const foreground = (hex: string) => {
@@ -236,6 +263,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       prefs: state.prefs,
       school: state.school,
       clubs: state.clubs,
+      clubMembers: state.clubMembers,
       teams: state.teams,
       events: state.events,
       eventRsvps: state.eventRsvps,
@@ -280,8 +308,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       addEvent: (event) => run(() => createEventFn({ data: event })),
       removeEvent: (id) => run(() => deleteEventFn({ data: { id } })),
-      setEventRsvp: (eventId, status) =>
-        run(() => setEventRsvpFn({ data: { eventId, status } })),
+      setEventRsvp: (eventId, status) => run(() => setEventRsvpFn({ data: { eventId, status } })),
       addAnnouncement: (post) => run(() => createAnnouncementFn({ data: post })),
       removeAnnouncement: (id) => run(() => deleteAnnouncementFn({ data: { id } })),
 

@@ -9,6 +9,7 @@ import {
   type AdminRequest,
   type Announcement,
   type Club,
+  type ClubMember,
   type ClubCategory,
   type ClubEvent,
   type EventRsvp,
@@ -62,6 +63,7 @@ export type AppState = {
     secondaryColor: string;
   } | null;
   clubs: Club[];
+  clubMembers: Record<string, ClubMember[]>;
   teams: Team[];
   events: ClubEvent[];
   eventRsvps: EventRsvp[];
@@ -225,6 +227,7 @@ export async function loadState(): Promise<AppState> {
     prefs: user?.prefs ?? { ...defaultPrefs },
     school: null,
     clubs: [],
+    clubMembers: {},
     teams: [],
     events: [],
     eventRsvps: [],
@@ -316,6 +319,29 @@ export async function loadState(): Promise<AppState> {
   const manageable = clubs.filter((c) => canManage(user, c));
   const manageableIds = new Set(manageable.map((c) => c.id));
   const schoolClubIds = new Set(clubs.map((club) => club.id));
+  const rosterClubIds = new Set([
+    ...myClubIds,
+    ...manageableIds,
+    ...(isActiveAdmin(user) ? clubs.map((club) => club.id) : []),
+  ]);
+  const clubMembers = Object.fromEntries(
+    [...rosterClubIds].map((clubId) => [
+      clubId,
+      db.memberships
+        .filter((membership) => membership.clubId === clubId && membership.status === "member")
+        .map((membership) => db.users.find((account) => account.id === membership.userId))
+        .filter(
+          (account): account is UserRecord =>
+            !!account && (account.id === user.id || account.prefs.directoryVisible),
+        )
+        .map((account) => ({
+          id: account.id,
+          name: account.name,
+          ...(account.grade ? { grade: account.grade } : {}),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    ]),
+  );
 
   const visibleAnnouncements = db.announcements.filter((a) => {
     if (a.schoolId) return a.schoolId === school.id;
@@ -385,6 +411,7 @@ export async function loadState(): Promise<AppState> {
       secondaryColor: school.secondaryColor,
     },
     clubs: clubs.map((c) => toClub(db, c)),
+    clubMembers,
     teams: visibleTeams.map((team) => toTeam(db, team, user)),
     events: visibleEvents,
     eventRsvps: db.eventRsvps

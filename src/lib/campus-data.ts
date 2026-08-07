@@ -17,13 +17,7 @@ export type AccountStatus = "active" | "pending" | "denied";
 
 export type ClubCategory = "Academic" | "Service" | "Arts" | "STEM" | "Culture" | "Athletics";
 
-export const CATEGORIES: ClubCategory[] = [
-  "Academic",
-  "STEM",
-  "Service",
-  "Arts",
-  "Culture",
-];
+export const CATEGORIES: ClubCategory[] = ["Academic", "STEM", "Service", "Arts", "Culture"];
 
 export const GRADES = ["9th", "10th", "11th", "12th"] as const;
 export type Grade = (typeof GRADES)[number];
@@ -160,6 +154,13 @@ export type Club = {
   blurb: string;
   logo?: string;
   joinInstructions?: string | undefined;
+};
+
+/** A privacy-safe roster entry visible only inside clubs the viewer belongs to or manages. */
+export type ClubMember = {
+  id: string;
+  name: string;
+  grade?: string | undefined;
 };
 
 export type Team = {
@@ -340,7 +341,12 @@ export function emailProblem(email: string, role: Role): string | null {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Enter your full school email address.";
   const domain = value.split("@")[1] ?? "";
   const personalDomains = new Set([
-    "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "aol.com",
+    "gmail.com",
+    "yahoo.com",
+    "outlook.com",
+    "hotmail.com",
+    "icloud.com",
+    "aol.com",
   ]);
   if (personalDomains.has(domain))
     return `${role === "student" ? "Students" : "Staff"} must use an email address issued by their school or district.`;
