@@ -180,64 +180,12 @@ function AccountPage() {
           {schoolCode && <Row k="Access code" v={schoolCode} />}
           <Row k="Clubs joined" v={String(myClubs.length)} />
         </dl>
-        {session.role !== "admin" && (
-          <div className="mt-5 border-t border-border pt-4">
-            {confirmLeave ? (
-              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4">
-                <p className="text-sm font-semibold">Leave {school?.name ?? "this school"}?</p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  Your club and team memberships, requests, RSVPs, and tutorial data will be
-                  cleared. Sponsored clubs and teams will return to the campus admin. Your account
-                  will stay active so you can enter a different school code, but staff must be
-                  approved by the new school's admin.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={leaving}
-                    onClick={async () => {
-                      setLeaving(true);
-                      setLeaveError("");
-                      const err = await leaveSchool();
-                      if (err) {
-                        setLeaveError(err);
-                        setLeaving(false);
-                        return;
-                      }
-                      navigate({ to: "/", replace: true });
-                    }}
-                    className="rounded-md bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 disabled:opacity-60"
-                  >
-                    {leaving ? "Leaving..." : "Yes, leave school"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={leaving}
-                    onClick={() => {
-                      setConfirmLeave(false);
-                      setLeaveError("");
-                    }}
-                    className="rounded-md px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:opacity-60"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirmLeave(true)}
-                className="rounded-md border border-destructive px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10"
-              >
-                Leave school
-              </button>
-            )}
-            {leaveError && <p className="mt-3 text-sm text-destructive">{leaveError}</p>}
-          </div>
-        )}
       </Section>
 
-      <Section title="Danger zone" desc="Sign out or delete your account for good.">
+      <Section
+        title="Danger zone"
+        desc="Leave your school, sign out, or permanently delete your account."
+      >
         <div className="flex flex-wrap gap-2">
           <button
             onClick={async () => {
@@ -248,6 +196,18 @@ function AccountPage() {
           >
             Sign out
           </button>
+          {session.role !== "admin" && !confirmLeave && (
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmDelete(false);
+                setConfirmLeave(true);
+              }}
+              className="rounded-md border border-destructive px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10"
+            >
+              Leave school
+            </button>
+          )}
           {confirmDelete ? (
             <>
               <button
@@ -273,13 +233,59 @@ function AccountPage() {
             </>
           ) : (
             <button
-              onClick={() => setConfirmDelete(true)}
+              onClick={() => {
+                setConfirmLeave(false);
+                setConfirmDelete(true);
+              }}
               className="rounded-md border border-destructive px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10"
             >
               Delete account
             </button>
           )}
         </div>
+        {session.role !== "admin" && confirmLeave && (
+          <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/5 p-4">
+            <p className="text-sm font-semibold">Warning: leave {school?.name ?? "this school"}?</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              This resets your club and team memberships, pending requests, RSVPs, and tutorial
+              data. Sponsored clubs and teams will return to the campus admin. Your account will not
+              be deleted, and you can enter a different school code afterward. Staff must be
+              approved again by the new school's admin.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={leaving}
+                onClick={async () => {
+                  setLeaving(true);
+                  setLeaveError("");
+                  const err = await leaveSchool();
+                  if (err) {
+                    setLeaveError(err);
+                    setLeaving(false);
+                    return;
+                  }
+                  navigate({ to: "/", replace: true });
+                }}
+                className="rounded-md bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 disabled:opacity-60"
+              >
+                {leaving ? "Leaving..." : "Yes, leave and reset my school data"}
+              </button>
+              <button
+                type="button"
+                disabled={leaving}
+                onClick={() => {
+                  setConfirmLeave(false);
+                  setLeaveError("");
+                }}
+                className="rounded-md px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        {leaveError && <p className="mt-3 text-sm text-destructive">{leaveError}</p>}
         {deleteError && <p className="mt-3 text-sm text-destructive">{deleteError}</p>}
       </Section>
     </div>
