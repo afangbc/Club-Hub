@@ -1,15 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Clock3, MapPin, Users } from "lucide-react";
-import { AdminShell } from "@/components/AdminShell";
 import { formatTime } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/admin/tutorials")({
-  component: () => (
-    <AdminShell>
-      <AdminTutorials />
-    </AdminShell>
-  ),
+  component: AdminTutorials,
 });
 function AdminTutorials() {
   const { tutorials } = useSession();

@@ -1,16 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CalendarOff, Clock3, MapPin, Repeat2, Trash2, Users } from "lucide-react";
 import { useState } from "react";
-import { StaffShell } from "@/components/StaffShell";
 import { formatTime } from "@/lib/campus-data";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/manage/tutorials")({
-  component: () => (
-    <StaffShell>
-      <StaffTutorials />
-    </StaffShell>
-  ),
+  component: StaffTutorials,
 });
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const dateLabel = (date: string) =>
@@ -68,8 +63,8 @@ function StaffTutorials() {
       <p className="mt-1 text-sm text-muted-foreground">
         Publish weekly availability, add one-time sessions, and manage student signups.
       </p>
-      <div className="mt-6 grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
-        <form onSubmit={submit} className="card-surface p-5">
+      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+        <form onSubmit={submit} className="card-surface self-start p-5">
           <h2 className="text-2xl">Add tutorial times</h2>
           <div className="mt-4 grid grid-cols-2 gap-2">
             <button
