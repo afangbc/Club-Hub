@@ -13,7 +13,10 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 function withSearchIndexingPolicy(request: Request, response: Response): Response {
   const pathname = new URL(request.url).pathname;
   const headers = new Headers(response.headers);
-  headers.set("x-robots-tag", pathname === "/" ? "index, follow" : "noindex, nofollow, noarchive");
+  const contentType = headers.get("content-type") ?? "";
+  const indexable =
+    pathname === "/" && response.status === 200 && contentType.includes("text/html");
+  headers.set("x-robots-tag", indexable ? "index, follow" : "noindex, nofollow, noarchive");
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
