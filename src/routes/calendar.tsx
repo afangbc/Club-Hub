@@ -14,6 +14,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -309,159 +310,188 @@ function MeetingPanel({
             "--meeting-accent": schoolAccent,
           } as CSSProperties
         }
-        className="z-[110] max-h-[92vh] overflow-y-auto border-b-4 border-[var(--meeting-primary)] bg-secondary p-0 [&>button]:right-24 [&>button]:top-5 [&>button]:border [&>button]:border-[var(--meeting-accent)] [&>button]:bg-card [&>button]:p-1.5 [&>button]:text-foreground [&>button]:opacity-100"
+        className="z-[110] max-h-[94vh] overflow-y-auto border-b-4 border-[var(--meeting-primary)] bg-secondary p-0 [&>button]:hidden"
       >
         {event && (
-          <div className="mx-auto w-full max-w-5xl px-5 py-7 sm:px-8">
-            <SheetHeader className="sr-only">
-              <SheetTitle>{event.title}</SheetTitle>
-              <SheetDescription>Meeting details and attendance responses</SheetDescription>
-            </SheetHeader>
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+          <div className="mx-auto w-full max-w-5xl p-4 sm:p-6">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+              <SheetHeader className="sr-only">
+                <SheetTitle>{event.title}</SheetTitle>
+                <SheetDescription>Meeting details and attendance responses</SheetDescription>
+              </SheetHeader>
               <div
-                className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 shadow-sm ring-2"
-                style={
-                  {
-                    borderColor: schoolAccent,
-                    backgroundColor: `color-mix(in srgb, ${schoolPrimary} 20%, transparent)`,
-                    boxShadow: `0 0 24px color-mix(in srgb, ${schoolAccent} 18%, transparent)`,
-                    "--tw-ring-color": `color-mix(in srgb, ${schoolAccent} 30%, transparent)`,
-                  } as CSSProperties
-                }
+                className="relative border-b border-border p-5 sm:p-7"
+                style={{
+                  background: `linear-gradient(135deg, color-mix(in srgb, ${schoolPrimary} 18%, var(--color-card)), color-mix(in srgb, ${schoolAccent} 8%, var(--color-card)))`,
+                }}
               >
-                {club?.logo ? (
-                  <img
-                    src={club.logo}
-                    alt={`${club.name} logo`}
-                    className="size-full object-contain p-2"
-                  />
-                ) : (
-                  <span className="font-display text-4xl text-[var(--meeting-accent)]">
-                    {(club?.name ?? teamName ?? "E").charAt(0)}
-                  </span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--meeting-accent)]">
-                  {club?.name ?? teamName ?? "School event"}
-                </p>
-                <h2 className="mt-1 font-display text-4xl leading-tight sm:text-5xl">
-                  {event.title}
-                </h2>
-                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <CalendarClock className="size-4 text-[var(--meeting-accent)]" />
-                    {new Date(`${event.date}T12:00:00`).toLocaleDateString(undefined, {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Clock3 className="size-4 text-[var(--meeting-accent)]" />
-                    {formatTime(event.start)}–{formatTime(event.end)}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="size-4 text-[var(--meeting-accent)]" />
-                    {event.location}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {event.description && (
-              <section className="mt-6 rounded-xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-xl font-semibold">Description</h3>
-                <p className="mt-2 max-w-4xl text-sm leading-relaxed text-muted-foreground">
-                  {event.description}
-                </p>
-              </section>
-            )}
-
-            <div className="mt-7 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-              <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <Users className="size-5 text-[var(--meeting-accent)]" />
-                  <h3 className="text-xl font-semibold">Can you make it?</h3>
-                </div>
-                {canRespond ? (
-                  <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                    {groups.map(({ status, label, icon: Icon, active }) => (
-                      <button
-                        key={status}
-                        type="button"
-                        disabled={!!busy}
-                        onClick={async () => {
-                          setBusy(status);
-                          setError((await onRespond(status)) ?? "");
-                          setBusy(null);
-                        }}
-                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-3 text-sm font-semibold transition hover:-translate-y-0.5 disabled:opacity-60 ${current === status ? active : "border-input bg-background hover:border-[var(--meeting-accent)]"}`}
-                      >
-                        <Icon className="size-4" /> {busy === status ? "Saving…" : label}
-                      </button>
-                    ))}
+                <SheetClose className="absolute right-4 top-4 grid size-9 place-items-center rounded-full border border-[var(--meeting-accent)] bg-card/90 text-foreground shadow-sm transition hover:scale-105 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--meeting-accent)]">
+                  <X className="size-4" />
+                  <span className="sr-only">Close meeting details</span>
+                </SheetClose>
+                <div className="flex flex-col gap-5 pr-12 sm:flex-row sm:items-center">
+                  <div
+                    className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 bg-card shadow-sm ring-2"
+                    style={
+                      {
+                        borderColor: schoolAccent,
+                        backgroundColor: `color-mix(in srgb, ${schoolPrimary} 20%, transparent)`,
+                        boxShadow: `0 0 24px color-mix(in srgb, ${schoolAccent} 18%, transparent)`,
+                        "--tw-ring-color": `color-mix(in srgb, ${schoolAccent} 30%, transparent)`,
+                      } as CSSProperties
+                    }
+                  >
+                    {club?.logo ? (
+                      <img
+                        src={club.logo}
+                        alt={`${club.name} logo`}
+                        className="size-full bg-card object-contain p-2"
+                      />
+                    ) : (
+                      <span className="font-display text-4xl text-[var(--meeting-accent)]">
+                        {(club?.name ?? teamName ?? "E").charAt(0)}
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Attendance responses are available to student accounts.
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--meeting-accent)]">
+                      {club?.name ?? teamName ?? "School event"}
+                    </p>
+                    <h2 className="mt-1 font-display text-4xl leading-tight sm:text-5xl">
+                      {event.title}
+                    </h2>
+                    <div className="mt-4 flex flex-wrap gap-2 text-sm text-foreground/80">
+                      <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/75 px-3 py-1.5 shadow-sm">
+                        <CalendarClock className="size-4 text-[var(--meeting-accent)]" />
+                        {new Date(`${event.date}T12:00:00`).toLocaleDateString(undefined, {
+                          weekday: "long",
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                      <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/75 px-3 py-1.5 shadow-sm">
+                        <Clock3 className="size-4 text-[var(--meeting-accent)]" />
+                        {formatTime(event.start)}–{formatTime(event.end)}
+                      </span>
+                      <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/75 px-3 py-1.5 shadow-sm">
+                        <MapPin className="size-4 text-[var(--meeting-accent)]" />
+                        {event.location}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-5 sm:p-7">
+                {event.description && (
+                  <section className="rounded-xl border border-border bg-secondary/45 p-5">
+                    <h3 className="text-xl font-semibold">Description</h3>
+                    <p className="mt-2 max-w-4xl text-sm leading-relaxed text-muted-foreground">
+                      {event.description}
+                    </p>
+                  </section>
                 )}
-                {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
-                <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                  {groups.map(({ status, label, icon: Icon }) => {
-                    const people = responses.filter((response) => response.status === status);
-                    return (
-                      <div
-                        key={status}
-                        className="rounded-lg border border-border bg-secondary/60 p-3"
-                      >
-                        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide">
-                          <Icon className="size-3.5 text-[var(--meeting-accent)]" />
-                          {label} · {people.length}
-                        </p>
-                        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                          {people.length
-                            ? people.map((person) => person.name).join(", ")
-                            : "No responses yet"}
+
+                <div
+                  className={`${event.description ? "mt-5" : ""} grid gap-5 lg:grid-cols-[1.4fr_0.6fr] lg:items-start`}
+                >
+                  <section className="rounded-xl border border-border bg-secondary/35 p-5">
+                    <div className="flex items-center gap-2">
+                      <Users className="size-5 text-[var(--meeting-accent)]" />
+                      <h3 className="text-xl font-semibold">Can you make it?</h3>
+                    </div>
+                    {!canRespond && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Attendance responses are available to student accounts.
+                      </p>
+                    )}
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      {groups.map(({ status, label, icon: Icon, active }) => {
+                        const people = responses.filter((response) => response.status === status);
+                        const content = (
+                          <>
+                            <span className="flex items-center justify-between gap-2 text-sm font-semibold">
+                              <span className="flex items-center gap-1.5">
+                                <Icon className="size-4" />
+                                {busy === status ? "Saving…" : label}
+                              </span>
+                              <span className="rounded-full bg-card px-2 py-0.5 text-xs shadow-sm">
+                                {people.length}
+                              </span>
+                            </span>
+                            <span className="mt-3 block text-left text-xs font-normal leading-relaxed text-muted-foreground">
+                              {people.length
+                                ? people.map((person) => person.name).join(", ")
+                                : "No responses yet"}
+                            </span>
+                          </>
+                        );
+                        return canRespond ? (
+                          <button
+                            key={status}
+                            type="button"
+                            disabled={!!busy}
+                            onClick={async () => {
+                              setBusy(status);
+                              setError((await onRespond(status)) ?? "");
+                              setBusy(null);
+                            }}
+                            className={`min-h-24 rounded-xl border p-3.5 transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60 ${current === status ? active : "border-border bg-card hover:border-[var(--meeting-accent)]"}`}
+                          >
+                            {content}
+                          </button>
+                        ) : (
+                          <div
+                            key={status}
+                            className="min-h-24 rounded-xl border border-border bg-card p-3.5"
+                          >
+                            {content}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+                  </section>
+
+                  <section
+                    className={`rounded-xl border p-5 ${conflicts.length ? "border-destructive/40 bg-destructive/5 dark:border-destructive/60 dark:bg-destructive/10" : "border-success/35 bg-success/5"}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <CalendarClock
+                        className={`size-5 ${conflicts.length ? "text-destructive" : "text-success"}`}
+                      />
+                      <h3 className="text-xl font-semibold">Schedule conflicts</h3>
+                    </div>
+                    {conflicts.length ? (
+                      <ul className="mt-3 space-y-2">
+                        {conflicts.map((conflict) => (
+                          <li
+                            key={conflict.id}
+                            className="rounded-lg border border-destructive/20 bg-card p-3"
+                          >
+                            <p className="text-sm font-semibold">{conflict.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatTime(conflict.start)}–{formatTime(conflict.end)} ·{" "}
+                              {conflict.location}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="mt-5 text-center">
+                        <span className="mx-auto grid size-11 place-items-center rounded-full bg-success/10 text-success">
+                          <Check className="size-5" />
+                        </span>
+                        <p className="mt-3 font-semibold text-success">No conflicts</p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          This meeting fits your joined schedule.
                         </p>
                       </div>
-                    );
-                  })}
+                    )}
+                  </section>
                 </div>
-              </section>
-
-              <section
-                className={`rounded-xl border p-5 shadow-sm ${conflicts.length ? "border-destructive/40 bg-destructive/5 dark:border-destructive/60 dark:bg-destructive/10" : "border-border bg-card"}`}
-              >
-                <div className="flex items-center gap-2">
-                  <CalendarClock
-                    className={`size-5 ${conflicts.length ? "text-destructive" : "text-success"}`}
-                  />
-                  <h3 className="text-xl font-semibold">Schedule conflicts</h3>
-                </div>
-                {conflicts.length ? (
-                  <ul className="mt-3 space-y-2">
-                    {conflicts.map((conflict) => (
-                      <li
-                        key={conflict.id}
-                        className="rounded-lg border border-destructive/20 bg-card p-3"
-                      >
-                        <p className="text-sm font-semibold">{conflict.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatTime(conflict.start)}–{formatTime(conflict.end)} ·{" "}
-                          {conflict.location}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    No other joined meetings overlap with this time.
-                  </p>
-                )}
-              </section>
+              </div>
             </div>
           </div>
         )}
