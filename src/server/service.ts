@@ -93,6 +93,7 @@ export type AppState = {
   ownersConfigured: boolean;
   /** True in local dev with no mail provider — codes go to the server console. */
   emailInConsoleMode: boolean;
+  schoolDeparture: { schoolName: string; expiresAt: string } | null;
 };
 
 // ---------------------------------------------------------------- projections
@@ -227,6 +228,16 @@ export async function loadState(): Promise<AppState> {
   const db = await getDatabase();
   const user = await currentUser();
 
+  // Recovery copies are actual school data, so remove them durably as soon as
+  // the grace period has elapsed and the application receives another request.
+  if (db.schoolDepartures.some((item) => new Date(item.expiresAt).getTime() <= Date.now())) {
+    await transaction((next) => {
+      next.schoolDepartures = next.schoolDepartures.filter(
+        (item) => new Date(item.expiresAt).getTime() > Date.now(),
+      );
+    });
+  }
+
   const empty: AppState = {
     user: user ? toSession(user) : null,
     prefs: user?.prefs ?? { ...defaultPrefs },
@@ -252,10 +263,21 @@ export async function loadState(): Promise<AppState> {
     schoolOptions: [],
     ownersConfigured: ownersConfigured(),
     emailInConsoleMode: emailInConsoleMode(),
+    schoolDeparture: null,
   };
 
   // An unconfirmed address sees nothing but its own status.
   if (!user || !user.emailVerified) return empty;
+
+  const departure = db.schoolDepartures.find(
+    (item) => item.userId === user.id && new Date(item.expiresAt).getTime() > Date.now(),
+  );
+  if (departure) {
+    empty.schoolDeparture = {
+      schoolName: departure.schoolName,
+      expiresAt: departure.expiresAt,
+    };
+  }
 
   // Owners work above the schools: the request queue and the campus list, not a
   // club directory. They never belong to a campus themselves.
@@ -781,22 +803,29 @@ export async function joinSchool(input: { code: string }): Promise<Result> {
     if (record) {
       record.schoolId = school.id;
       if (record.role === "teacher") record.status = "pending";
+      // Joining another campus confirms the transfer and makes the old campus
+      // snapshot unrecoverable before the normal 14-day expiry.
+      next.schoolDepartures = next.schoolDepartures.filter((item) => item.userId !== user.id);
     }
   });
   return ok;
 }
 
-export async function leaveSchool(): Promise<Result> {
+export async function leaveSchool(input: { password: string }): Promise<Result> {
   const { user, error } = await requireEnrolled();
   if (!user) return fail(error);
   if (user.role === "admin")
     return fail("School admins must transfer campus ownership instead of leaving a school.");
+  if (!(await verifyPassword(input.password, user.passwordHash)))
+    return fail("That password doesn't match your account.");
 
   const result = await transaction((db): Result => {
     const record = db.users.find((candidate) => candidate.id === user.id);
     if (!record?.schoolId) return fail("Your account doesn't currently belong to a campus.");
 
     const oldSchoolId = record.schoolId;
+    const oldSchool = db.schools.find((school) => school.id === oldSchoolId);
+    if (!oldSchool) return fail("Your current school could not be found.");
     const sponsoredClubs = db.clubs.filter((club) => club.sponsorId === user.id);
     const sponsoredTeams = db.teams.filter((team) => team.sponsorId === user.id);
     const replacementAdmin = db.users.find(
@@ -820,15 +849,55 @@ export async function leaveSchool(): Promise<Result> {
       });
     }
 
-    db.memberships = db.memberships.filter((membership) => membership.userId !== user.id);
-    db.teamMemberships = db.teamMemberships.filter((membership) => membership.userId !== user.id);
-    db.eventRsvps = db.eventRsvps.filter((rsvp) => rsvp.userId !== user.id);
+    const memberships = db.memberships.filter((membership) => membership.userId === user.id);
+    const teamMemberships = db.teamMemberships.filter(
+      (membership) => membership.userId === user.id,
+    );
+    const eventRsvps = db.eventRsvps.filter((rsvp) => rsvp.userId === user.id);
 
     const tutorialScheduleIds = new Set(
       db.tutorialSchedules
         .filter((schedule) => schedule.teacherId === user.id)
         .map((schedule) => schedule.id),
     );
+    const tutorialSchedules = db.tutorialSchedules.filter(
+      (schedule) => schedule.teacherId === user.id,
+    );
+    const tutorialCancellations = db.tutorialCancellations.filter((cancellation) =>
+      tutorialScheduleIds.has(cancellation.scheduleId),
+    );
+    const tutorialTeachers = db.tutorialTeachers.filter(
+      (selection) => selection.studentId === user.id || selection.teacherId === user.id,
+    );
+    const tutorialSignups = db.tutorialSignups.filter(
+      (signup) => signup.studentId === user.id || tutorialScheduleIds.has(signup.scheduleId),
+    );
+
+    const leftAt = new Date();
+    const expiresAt = new Date(leftAt);
+    expiresAt.setDate(expiresAt.getDate() + 14);
+    db.schoolDepartures = db.schoolDepartures.filter((item) => item.userId !== user.id);
+    db.schoolDepartures.push({
+      userId: user.id,
+      schoolId: oldSchoolId,
+      schoolName: oldSchool.name,
+      previousStatus: record.status,
+      leftAt: leftAt.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      memberships,
+      teamMemberships,
+      eventRsvps,
+      tutorialSchedules,
+      tutorialCancellations,
+      tutorialTeachers,
+      tutorialSignups,
+      sponsoredClubIds: sponsoredClubs.map((club) => club.id),
+      sponsoredTeamIds: sponsoredTeams.map((team) => team.id),
+    });
+
+    db.memberships = db.memberships.filter((membership) => membership.userId !== user.id);
+    db.teamMemberships = db.teamMemberships.filter((membership) => membership.userId !== user.id);
+    db.eventRsvps = db.eventRsvps.filter((rsvp) => rsvp.userId !== user.id);
     db.tutorialSchedules = db.tutorialSchedules.filter(
       (schedule) => schedule.teacherId !== user.id,
     );
@@ -848,6 +917,76 @@ export async function leaveSchool(): Promise<Result> {
   });
 
   return result;
+}
+
+export async function undoLeaveSchool(): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return fail("You're signed out. Sign in and try again.");
+  if (user.schoolId) return fail("Leave your current school before restoring the previous one.");
+
+  return transaction((db): Result => {
+    const departure = db.schoolDepartures.find((item) => item.userId === user.id);
+    if (!departure) return fail("There is no school transfer to undo.");
+    if (new Date(departure.expiresAt).getTime() <= Date.now()) {
+      db.schoolDepartures = db.schoolDepartures.filter((item) => item.userId !== user.id);
+      return fail("The 14-day recovery period has ended and that school data is gone forever.");
+    }
+    if (!db.schools.some((school) => school.id === departure.schoolId))
+      return fail("That school no longer exists.");
+
+    const record = db.users.find((candidate) => candidate.id === user.id);
+    if (!record) return fail("Your account could not be found.");
+    record.schoolId = departure.schoolId;
+    record.status = departure.previousStatus;
+
+    const appendUnique = <T>(current: T[], restored: T[], key: (item: T) => string) => {
+      const existing = new Set(current.map(key));
+      return [...current, ...restored.filter((item) => !existing.has(key(item)))];
+    };
+    db.memberships = appendUnique(db.memberships, departure.memberships, (item) => item.id);
+    db.teamMemberships = appendUnique(
+      db.teamMemberships,
+      departure.teamMemberships,
+      (item) => item.id,
+    );
+    db.eventRsvps = appendUnique(
+      db.eventRsvps,
+      departure.eventRsvps,
+      (item) => `${item.eventId}:${item.userId}`,
+    );
+    db.tutorialSchedules = appendUnique(
+      db.tutorialSchedules,
+      departure.tutorialSchedules,
+      (item) => item.id,
+    );
+    db.tutorialCancellations = appendUnique(
+      db.tutorialCancellations,
+      departure.tutorialCancellations,
+      (item) => `${item.scheduleId}:${item.date}`,
+    );
+    db.tutorialTeachers = appendUnique(
+      db.tutorialTeachers,
+      departure.tutorialTeachers,
+      (item) => `${item.studentId}:${item.teacherId}`,
+    );
+    db.tutorialSignups = appendUnique(
+      db.tutorialSignups,
+      departure.tutorialSignups,
+      (item) => `${item.scheduleId}:${item.date}:${item.studentId}`,
+    );
+
+    for (const club of db.clubs.filter((item) => departure.sponsoredClubIds.includes(item.id))) {
+      const sponsor = db.users.find((candidate) => candidate.id === club.sponsorId);
+      if (sponsor?.role === "admin") club.sponsorId = user.id;
+    }
+    for (const team of db.teams.filter((item) => departure.sponsoredTeamIds.includes(item.id))) {
+      const sponsor = db.users.find((candidate) => candidate.id === team.sponsorId);
+      if (sponsor?.role === "admin") team.sponsorId = user.id;
+    }
+
+    db.schoolDepartures = db.schoolDepartures.filter((item) => item.userId !== user.id);
+    return ok;
+  });
 }
 
 // ------------------------------------------------------- owner administration
@@ -1172,6 +1311,7 @@ export async function deleteAccount(): Promise<Result> {
     db.sessions = db.sessions.filter((s) => s.userId !== user.id);
     db.emailVerifications = db.emailVerifications.filter((item) => item.userId !== user.id);
     db.adminRequests = db.adminRequests.filter((request) => request.userId !== user.id);
+    db.schoolDepartures = db.schoolDepartures.filter((departure) => departure.userId !== user.id);
     return [];
   });
 

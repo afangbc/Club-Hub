@@ -44,6 +44,7 @@ async function migrate(parsed: LegacyDatabase): Promise<Database> {
   next.tutorialCancellations = next.tutorialCancellations ?? [];
   next.tutorialTeachers = next.tutorialTeachers ?? [];
   next.tutorialSignups = next.tutorialSignups ?? [];
+  next.schoolDepartures = next.schoolDepartures ?? [];
 
   const neutralDemoEmails: Record<string, { from: string; to: string }> = {
     "u-rivera": { from: "jordan.rivera.123@k12.friscoisd.org", to: "student@demo.clubhub.app" },

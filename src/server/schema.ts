@@ -11,7 +11,7 @@ import {
 } from "@/lib/campus-data";
 import { hashPassword } from "./crypto";
 
-export const DB_VERSION = 13;
+export const DB_VERSION = 14;
 
 export type SchoolRecord = {
   id: string;
@@ -178,6 +178,25 @@ export type AdminRequestRecord = {
   decidedBy?: string;
 };
 
+/** Recoverable school-specific data retained for the 14-day transfer grace period. */
+export type SchoolDepartureRecord = {
+  userId: string;
+  schoolId: string;
+  schoolName: string;
+  previousStatus: AccountStatus;
+  leftAt: string;
+  expiresAt: string;
+  memberships: MembershipRecord[];
+  teamMemberships: TeamMembershipRecord[];
+  eventRsvps: EventRsvpRecord[];
+  tutorialSchedules: TutorialScheduleRecord[];
+  tutorialCancellations: TutorialCancellationRecord[];
+  tutorialTeachers: TutorialTeacherRecord[];
+  tutorialSignups: TutorialSignupRecord[];
+  sponsoredClubIds: string[];
+  sponsoredTeamIds: string[];
+};
+
 export type Database = {
   version: number;
   schools: SchoolRecord[];
@@ -196,6 +215,7 @@ export type Database = {
   sessions: SessionRecord[];
   adminRequests: AdminRequestRecord[];
   emailVerifications: EmailVerificationRecord[];
+  schoolDepartures: SchoolDepartureRecord[];
 };
 
 export const FRISCO_SCHOOL_ID = "sch-frisco-hs";
@@ -448,5 +468,6 @@ export async function buildSeedDatabase(): Promise<Database> {
     sessions: [],
     adminRequests: [],
     emailVerifications: [],
+    schoolDepartures: [],
   };
 }

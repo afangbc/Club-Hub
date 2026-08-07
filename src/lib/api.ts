@@ -92,10 +92,17 @@ export const joinSchoolFn = createServerFn({ method: "POST" })
     return joinSchool(data);
   });
 
-export const leaveSchoolFn = createServerFn({ method: "POST" }).handler(
-  async (): Promise<Result> => {
+export const leaveSchoolFn = createServerFn({ method: "POST" })
+  .validator((d: { password: string }) => ({ password: str((d ?? {}).password, 200) }))
+  .handler(async ({ data }): Promise<Result> => {
     const { leaveSchool } = await import("@/server/service");
-    return leaveSchool();
+    return leaveSchool(data);
+  });
+
+export const undoLeaveSchoolFn = createServerFn({ method: "POST" }).handler(
+  async (): Promise<Result> => {
+    const { undoLeaveSchool } = await import("@/server/service");
+    return undoLeaveSchool();
   },
 );
 

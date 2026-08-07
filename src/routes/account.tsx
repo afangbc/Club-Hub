@@ -79,6 +79,7 @@ function AccountPage() {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [leaveError, setLeaveError] = useState("");
   const [leaving, setLeaving] = useState(false);
+  const [leavePassword, setLeavePassword] = useState("");
 
   if (!session) return null;
 
@@ -249,9 +250,19 @@ function AccountPage() {
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               This resets your club and team memberships, pending requests, RSVPs, and tutorial
               data. Sponsored clubs and teams will return to the campus admin. Your account will not
-              be deleted, and you can enter a different school code afterward. Staff must be
-              approved again by the new school's admin.
+              be deleted. Your old school data is recoverable for 14 days, then it is deleted
+              forever. Joining another school confirms the transfer early and permanently deletes
+              the recovery copy. Staff must be approved again by the new school's admin.
             </p>
+            <div className="mt-4 max-w-sm">
+              <Field
+                label="Enter your current password to continue"
+                value={leavePassword}
+                onChange={setLeavePassword}
+                type="password"
+                placeholder="Current password"
+              />
+            </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
@@ -259,7 +270,7 @@ function AccountPage() {
                 onClick={async () => {
                   setLeaving(true);
                   setLeaveError("");
-                  const err = await leaveSchool();
+                  const err = await leaveSchool(leavePassword);
                   if (err) {
                     setLeaveError(err);
                     setLeaving(false);
@@ -277,6 +288,7 @@ function AccountPage() {
                 onClick={() => {
                   setConfirmLeave(false);
                   setLeaveError("");
+                  setLeavePassword("");
                 }}
                 className="rounded-md px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:opacity-60"
               >

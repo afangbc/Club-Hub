@@ -44,7 +44,8 @@ const demoLogins = [
 ];
 
 function Index() {
-  const { session, joined, ready, signIn, signUp, joinSchool } = useSession();
+  const { session, joined, ready, signIn, signUp, joinSchool, schoolDeparture, undoLeaveSchool } =
+    useSession();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [role, setRole] = useState<Role>("student");
@@ -316,6 +317,32 @@ function Index() {
                 Enter the access code your school gave you. It connects your account only to that
                 campus, so you never see clubs or teams from another school.
               </p>
+              {schoolDeparture && (
+                <div className="rounded-md border border-primary/35 bg-accent p-3">
+                  <p className="text-sm font-semibold">Changed your mind?</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    You can restore your account at {schoolDeparture.schoolName} until{" "}
+                    {new Date(schoolDeparture.expiresAt).toLocaleDateString()}. After that, the old
+                    school data is deleted forever. Joining a new school also permanently removes
+                    this recovery copy.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      try {
+                        setError((await undoLeaveSchool()) ?? "");
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                    className="mt-3 rounded-md border border-primary px-3 py-2 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground disabled:opacity-60"
+                  >
+                    Undo and restore my old school data
+                  </button>
+                </div>
+              )}
               <Field
                 label="School access code"
                 value={code}

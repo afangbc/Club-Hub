@@ -38,6 +38,7 @@ import {
   updateClubFn,
   updatePrefFn,
   updateProfileFn,
+  undoLeaveSchoolFn,
   verifyEmailFn,
   type AppState,
   type Result,
@@ -105,6 +106,7 @@ type State = {
   pendingAdminRequests: AdminRequest[];
   myAdminRequest: AdminRequest | null;
   schoolOptions: SchoolSummary[];
+  schoolDeparture: AppState["schoolDeparture"];
   ownersConfigured: boolean;
   refresh: () => Promise<void>;
   signIn: Action<[string, string]>;
@@ -124,7 +126,8 @@ type State = {
   verifyEmail: Action<[string]>;
   resendVerification: Action<[]>;
   joinSchool: Action<[string]>;
-  leaveSchool: Action<[]>;
+  leaveSchool: Action<[string]>;
+  undoLeaveSchool: Action<[]>;
   updateProfile: Action<[{ name: string; email: string; grade: string }]>;
   changePassword: Action<[string, string, string]>;
   setPref: Action<[keyof Prefs, boolean]>;
@@ -210,6 +213,7 @@ const emptyState: AppState = {
   adminRequests: [],
   myAdminRequest: null,
   schoolOptions: [],
+  schoolDeparture: null,
   ownersConfigured: true,
   emailInConsoleMode: false,
 };
@@ -315,6 +319,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       pendingAdminRequests: state.adminRequests.filter((r) => r.status === "pending"),
       myAdminRequest: state.myAdminRequest,
       schoolOptions: state.schoolOptions,
+      schoolDeparture: state.schoolDeparture,
       ownersConfigured: state.ownersConfigured,
       refresh,
 
@@ -324,7 +329,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       verifyEmail: (code) => run(() => verifyEmailFn({ data: { code } })),
       resendVerification: () => run(() => resendVerificationFn()),
       joinSchool: (code) => run(() => joinSchoolFn({ data: { code } })),
-      leaveSchool: () => run(() => leaveSchoolFn()),
+      leaveSchool: (password) => run(() => leaveSchoolFn({ data: { password } })),
+      undoLeaveSchool: () => run(() => undoLeaveSchoolFn()),
       updateProfile: (input) => run(() => updateProfileFn({ data: input })),
       changePassword: (current, next, confirm) =>
         run(() => changePasswordFn({ data: { current, next, confirm } })),
